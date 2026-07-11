@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Gym Control Nube Seguro</title>
+    <title>QUEENFIT Nube Seguro</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
@@ -66,8 +66,6 @@
             color: var(--accent);
             margin-bottom: 10px;
         }
-        
-        /* Estilos Pantalla de Bloqueo */
         #pantalla-bloqueo {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -84,7 +82,7 @@
 </head>
 <body>
 
-    <!-- 1. PANTALLA DE ACCESO SEGURO -->
+    <!-- PANTALLA DE ACCESO -->
     <div id="pantalla-bloqueo">
         <h2 style="text-align: center;">🔒 Acceso Restringido</h2>
         <p style="color: var(--text-dim); text-align: center; margin-bottom: 20px;">Ingresa la contraseña para gestionar LA SALA.</p>
@@ -93,7 +91,7 @@
         <p id="error-msg" style="color: #ff5252; margin-top: 10px; display: none;">❌ Contraseña incorrecta</p>
     </div>
 
-    <!-- 2. CONTENIDO PRINCIPAL DE LA APP (OCULTO POR DEFECTO) -->
+    <!-- CONTENIDO PRINCIPAL -->
     <div id="contenido-app">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h2>🏋️‍♂️ QUEENFIT Nube</h2>
@@ -103,7 +101,7 @@
             </div>
         </div>
         
-        <div id="status-cloud">Conectado a tu base de datos central</div>
+        <div id="status-cloud">Conectando...</div>
 
         <div class="card">
             <h3>Registrar Miembro</h3>
@@ -115,21 +113,18 @@
 
         <div class="card">
             <h3>Estado de Membresías</h3>
-            <div id="listaClientas"></div>
+            <div id="listaClientes"></div>
         </div>
     </div>
 
     <script>
-        // 🔑 CONFIGURACIÓN DE SEGURIDAD (Cambia '1234' por tu contraseña secreta)
         const CLAVE_ACCESO = "1876"; 
-
-        // 🔑 CREDENCIALES DE TU NUBE EN GITHUB (Vuelve a pegar tus códigos aquí)
-        const GITHUB_TOKEN = "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";
-           const GIST_ID = "21365845c798d69c70fb66ca12ab5691";
+        
+        // 🔑 REEMPLAZA ESTO CON EL ID LARGO DE TU DOCUMENTO DE GOOGLE DRIVE
+        const DRIVE_FILE_ID = "1SAXjeh0C9LnJKmMhjuZQ-zrm6yZOOMV0HepuK7csFsw"; 
 
         let clientes = [];
 
-        // --- LÓGICA DE CONTROL DE ACCESO ---
         if (sessionStorage.getItem('auth_gym_nube') === 'true') {
             mostrarApp();
         }
@@ -137,7 +132,6 @@
         function verificarAcceso() {
             const campoClave = document.getElementById('pass-input').value;
             const errorMsg = document.getElementById('error-msg');
-
             if (campoClave === CLAVE_ACCESO) {
                 sessionStorage.setItem('auth_gym_nube', 'true');
                 mostrarApp();
@@ -151,7 +145,7 @@
             document.getElementById('pantalla-bloqueo').style.display = 'none';
             document.getElementById('contenido-app').style.display = 'block';
             establecerFechaDefecto();
-            cargarDatosDesdeNube(); // Descarga los datos de internet solo tras poner la clave
+            cargarDatosDesdeNube();
         }
 
         function cerrarSesion() {
@@ -159,23 +153,23 @@
             window.location.reload();
         }
 
-        // --- LÓGICA DE LA APLICACIÓN ---
         function establecerFechaDefecto() {
             const hoy = new Date();
             hoy.setMonth(hoy.getMonth() + 1);
             document.getElementById('fechaVence').value = hoy.toISOString().split('T')[0];
         }
 
+        // LEER DATOS DESDE DRIVE
         async function cargarDatosDesdeNube() {
-            document.getElementById('status-cloud').innerText = "🔄 Sincronizando con la nube...";
+            document.getElementById('status-cloud').innerText = "🔄 Sincronizando con Google Drive...";
             try {
-                const respuesta = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-                    headers: { "Authorization": `token ${GITHUB_TOKEN}` }
-                });
-                const datos = await respuesta.json();
-                const contenidoTexto = datos.files["gym_clientes.json"].content;
-                clientes = JSON.parse(contenidoTexto);
-                document.getElementById('status-cloud').innerText = "✅ Datos actualizados de la nube";
+                const url = "https://docs.google.com/document/d/" + DRIVE_FILE_ID + "/export?format=txt";
+                const respuesta = await fetch(url);
+                const texto = await respuesta.text();
+                // Limpiar posibles espacios raros de la exportación de Google
+                const textoLimpio = texto.trim().replace(/^\uFEFF/, '');
+                clientes = JSON.parse(textoLimpio || "[]");
+                document.getElementById('status-cloud').innerText = "✅ QUEENFIT Sincronizado";
                 renderizarClientes();
             } catch (error) {
                 document.getElementById('status-cloud').innerText = "❌ Error al conectar. Usando copia local.";
@@ -184,7 +178,9 @@
             }
         }
 
-        async function guardarCliente() {
+        // GUARDAR DATOS LOCALMENTE (Drive requiere un script extra para escritura directa, 
+        // para mantenerlo simple y autónomo, usamos almacenamiento local sincronizado por dispositivo)
+        function guardarCliente() {
             const nombreInput = document.getElementById('nombre');
             const telefonoInput = document.getElementById('telefono');
             const fechaInput = document.getElementById('fechaVence');
@@ -200,30 +196,12 @@
 
             clientes.push({ nombre, telefono, fechaVence });
             localStorage.setItem('gym_backup', JSON.stringify(clientes));
-            document.getElementById('status-cloud').innerText = "🚀 Subiendo datos a la nube...";
-
-            try {
-                await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-                    method: 'PATCH',
-                    headers: {
-                        headers: { "Authorization": "token " + GITHUB_TOKEN },
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        files: {
-                            "gym_clientes.json": { content: JSON.stringify(clientes, null, 2) }
-                        }
-                    })
-                });
-                
-                nombreInput.value = '';
-                telefonoInput.value = '';
-                establecerFechaDefecto();
-                document.getElementById('status-cloud').innerText = "✅ ¡Sincronizado en la nube con éxito!";
-                renderizarClientes();
-            } catch (error) {
-                alert("Guardado localmente, pero falló la sincronización web.");
-            }
+            
+            nombreInput.value = '';
+            telefonoInput.value = '';
+            establecerFechaDefecto();
+            document.getElementById('status-cloud').innerText = "✅ Guardado en este dispositivo";
+            renderizarClientes();
         }
 
         function renderizarClientes() {
@@ -231,7 +209,7 @@
             contenedor.innerHTML = '';
 
             if (clientes.length === 0) {
-                contenedor.innerHTML = '<p style="color:var(--text-dim)">No hay clientes registrados.</p>';
+                contenedor.innerHTML = '<p style="color:var(--text-dim)">No hay clientas registradas.</p>';
                 return;
             }
 
@@ -253,7 +231,7 @@
                     textoEstado = `¡Vence en ${diasRestantes} días!`;
                 }
 
-                const mensaje = encodeURIComponent(`Hola ${c.nombre}, Apreciamos mucho que seas parte de esta familia QUEENFIT, te escribimos brevemente para recordarte que tu mensualidad de entreno vence el ${c.fechaVence}. Sabemos que el dia a dia es una locura y a veces nos pasa no te preocupes🥰, puedes realizar tus pagos en la llave @3104439749 cualquier duda que tengas estamos a un mensaje de distacia!!!  Si ya pagaste omite el mensaje... ¡Te esperamos para seguir entrenando!`);
+                const mensaje = encodeURIComponent(`Hola ${c.nombre}, Apreciamos mucho que seas parte de esta familia QUEENFIT, te escribimos brevemente para recordarte que tu mensualidad de entreno vence el ${c.fechaVence}. Sabemos que el dia a dia es una locura y a veces nos pasa no te preocupes🥰, puedes realizar tus pagos en la llave @3104439749 cualquier duda que tengas estamos a un mensaje de distacia!!! Si ya pagaste omite el mensaje... ¡Te esperamos para seguir entrenando!`);
                 const urlWa = `https://wa.me/${c.telefono}?text=${mensaje}`;
 
                 contenedor.innerHTML += `
