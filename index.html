@@ -218,8 +218,8 @@
     <script>
         const CLAVE_ACCESO = "1876"; 
         
-        // 🔑 REEMPLAZA ESTAS DOS LÍNEAS CON TUS DATOS DE TU PANEL DE SUPABASE (PUBLISHABLE KEY)
-        const SUPABASE_URL = "https://hvinbsrtwllpdppgxdpw.supabase.co/rest/v1/";
+        // 🔑 URL LIMPIA Y CORREGIDA AQUÍ
+        const SUPABASE_URL = "https://hvinbsrtwllpdppgxdpw.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_aLuAKNoFHcKZvb9jq2mAXw_8Ioa-vQJ";
 
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -261,6 +261,10 @@
             document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             boton.classList.add('active');
+            
+            if (tabId === 'tab-historial') {
+                renderizarHistorial();
+            }
         }
 
         function establecerFechaDefecto() {
@@ -276,7 +280,8 @@
                 if (resClientes.error) throw resClientes.error;
                 clientes = resClientes.data || [];
 
-                const resHistorial = await _supabase.from('historial').select('*').order('created_at', { ascending: false });
+                // Validamos orden cronológico descendente usando created_at o id
+                const resHistorial = await _supabase.from('historial').select('*').order('id', { ascending: false });
                 if (resHistorial.error) throw resHistorial.error;
                 historialPagos = resHistorial.data || [];
 
@@ -418,12 +423,9 @@
 
                 let claseEstado = "ok";
                 let textoEstado = `${diasRestantes} días restantes`;
-                
-                // Construcción de Mensaje Inteligente según la deuda de la clienta
                 let plantillaMensaje = "";
                 
                 if (diasRestantes > 0) {
-                    // AL DÍA: Recordatorio preventivo normal
                     claseEstado = "ok";
                     plantillaMensaje = `Hola ${c.nombre}, Apreciamos mucho que seas parte de esta familia QUEENFIT, te escribimos brevemente para recordarte que tu mensualidad de entreno vence el ${c.fechaVence}. Sabemos que el dia a dia es una locura y a veces nos pasa no te preocupes🥰, puedes realizar tus pagos en la llave @3104439749 cualquier duda que tengas estamos a un mensaje de distacia!!! Si ya pagaste omite el mensaje... ¡Te esperamos para seguir entrenando!`;
                 } else {
@@ -431,11 +433,9 @@
                     const diasVencidos = Math.abs(diasRestantes);
                     
                     if (diasVencidos <= 30) {
-                        // VENCIDO RECIENTE (Menos de un mes de retraso)
                         textoEstado = `Vencido hace ${diasVencidos} días`;
                         plantillaMensaje = `Hola ${c.nombre}, esperamos que estés muy bien. Te escribimos de parte de la familia QUEENFIT para recordarte que tu mensualidad de entreno ya se encuentra vencida desde el pasado ${c.fechaVence} (hace ${diasVencidos} días). Te invitamos a ponerte al día en la llave @3104439749 para continuar con toda la energía en tus entrenamientos. Si ya realizaste tu pago, por favor omite este mensaje 🥰. ¡Te esperamos en la sala!`;
                     } else {
-                        // DEUDA DE VARIOS MESES (Más de 30 días de retraso)
                         const mesesDeuda = Math.floor(diasVencidos / 30);
                         textoEstado = `⚠️ Debe ${mesesDeuda} meses (${diasVencidos} días)`;
                         plantillaMensaje = `Hola ${c.nombre}, de parte de la familia QUEENFIT nos comunicamos contigo porque registramos en el sistema que tu membresía venció desde el pasado ${c.fechaVence} y presentas un saldo pendiente acumulado de aproximadamente ${mesesDeuda} meses de entreno. Queremos invitarte a que te pongas al día mediante nuestra llave de pagos @3104439749 o te acerques para validar tu estado. Si ya cancelaste o tienes alguna duda, escríbenos con confianza 🥰. ¡Queremos seguir acompañándote en tus metas!`;
