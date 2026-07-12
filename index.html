@@ -7,16 +7,21 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
-    <!-- 📚 Librería Oficial de Supabase Cloud -->
+    <!-- 📚 Librerías Oficiales: Supabase Cloud + Gráficos Profesionales -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         :root {
             --bg-color: #121212;
             --card-bg: #1e1e1e;
             --accent: #00e676;
+            --accent-dim: rgba(0, 230, 118, 0.1);
             --text: #ffffff;
             --text-dim: #aaaaaa;
+            --danger: #ff5252;
+            --warning: #ffb300;
+            --info: #00b0ff;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -46,153 +51,105 @@
         }
         input, select { background: #2a2a2a; color: #fff; }
         button { background: var(--accent); color: #000; font-weight: bold; cursor: pointer; }
+        
+        /* Filtros rápidos de estado */
+        .contenedor-filtros-rapidos {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        .btn-filtro-rapido {
+            padding: 8px 2px;
+            font-size: 11px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin: 0;
+            text-align: center;
+            background: #333;
+            color: #fff;
+        }
+        .btn-filtro-rapido.active-todos { background: #fff; color: #000; }
+        .btn-filtro-rapido.active-vencidas { background: var(--danger); color: #fff; }
+        .btn-filtro-rapido.active-porvencer { background: var(--warning); color: #000; }
+        .btn-filtro-rapido.active-aldia { background: var(--accent); color: #000; }
+
         .cliente-item {
             border-bottom: 1px solid #333;
-            padding: 12px 0;
+            padding: 14px 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .vencer { color: #ff5252; font-weight: bold; }
+        .vencer { color: var(--danger); font-weight: bold; }
+        .advertencia { color: var(--warning); font-weight: bold; }
         .ok { color: var(--accent); }
-        .btn-wa {
-            background: #25d366;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        .btn-renovar {
-            background: #00b0ff;
-            color: white;
-            padding: 6px 12px;
+        
+        /* Botones compactos iPhone de control */
+        .btn-accion-compacto {
+            padding: 6px 10px;
             border-radius: 6px;
             font-size: 14px;
             font-weight: bold;
             border: none;
             width: auto;
             margin: 0;
-            margin-left: 3px;
+            margin-left: 2px;
+            color: #000;
         }
-        .btn-editar {
-            background: #ffb300;
-            color: black;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: bold;
-            border: none;
-            width: auto;
-            margin: 0;
-            margin-left: 3px;
-        }
-        .btn-perfil {
-            background: #9c27b0;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: bold;
-            border: none;
-            width: auto;
-            margin: 0;
-            margin-left: 3px;
-        }
-        #status-cloud {
-            text-align: center;
-            font-size: 12px;
-            color: var(--accent);
-            margin-bottom: 10px;
-        }
+        .c-wa { background: #25d366; color: white; text-decoration: none; display: inline-block; padding: 6px 10px; border-radius:6px; font-weight:bold; font-size:14px; }
+        .c-pagar { background: var(--info); color: white; }
+        .c-asistencia { background: #fff; color: black; }
+        .c-perfil { background: #9c27b0; color: white; }
+        .c-editar { background: var(--warning); color: black; }
+
+        #status-cloud { text-align: center; font-size: 12px; color: var(--accent); margin-bottom: 10px; }
         #pantalla-bloqueo {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: var(--bg-color);
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 30px;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg-color); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px;
         }
         
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         
         .tab-bar {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            height: 65px;
-            background: #1a1a1a;
-            border-top: 1px solid #2d2d2d;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 999;
+            position: fixed; bottom: 0; left: 0; right: 0; height: 65px;
+            background: #1a1a1a; border-top: 1px solid #2d2d2d;
+            display: flex; justify-content: space-around; align-items: center; z-index: 999;
         }
         .tab-button {
-            background: none;
-            color: var(--text-dim);
-            border: none;
-            font-size: 12px;
-            font-weight: normal;
-            padding: 5px;
-            margin: 0;
-            width: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            background: none; color: var(--text-dim); border: none; font-size: 12px;
+            padding: 5px; margin: 0; width: auto; display: flex; flex-direction: column; align-items: center;
         }
-        .tab-button.active {
-            color: var(--accent);
-            font-weight: bold;
-        }
+        .tab-button.active { color: var(--accent); font-weight: bold; }
         .tab-icon { font-size: 20px; margin-bottom: 3px; }
-        
-        .search-box {
-            background: #2a2a2a;
-            border-radius: 10px;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #444;
-        }
-        
-        .historial-item {
-            border-bottom: 1px solid #2d2d2d;
-            padding: 10px 0;
-            font-size: 14px;
-        }
-        
-        .grid-fechas {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
+        .search-box { background: #2a2a2a; border-radius: 10px; padding: 10px; margin-bottom: 10px; border: 1px solid #444; }
+        .historial-item { border-bottom: 1px solid #2d2d2d; padding: 10px 0; font-size: 14px; }
+        .grid-fechas { display: flex; gap: 10px; margin-bottom: 10px; }
         .grid-fechas div { flex: 1; }
         .grid-fechas label { font-size: 12px; color: var(--text-dim); }
     </style>
 </head>
 <body>
 
-    <!-- PANTALLA DE ACCESO + RECUPERACIÓN -->
+    <!-- PANTALLA DE ACCESO -->
     <div id="pantalla-bloqueo">
         <h2 style="text-align: center;">🔒 Acceso Restringido</h2>
         <p style="color: var(--text-dim); text-align: center; margin-bottom: 20px;">Ingresa la contraseña para gestionar LA SALA.</p>
         <input type="password" id="pass-input" placeholder="Contraseña de acceso" style="text-align: center; max-width: 300px;">
         <button onclick="verificarAcceso()" style="max-width: 300px; margin-top: 15px;">Entrar</button>
-        <p id="error-msg" style="color: #ff5252; margin-top: 10px; display: none;">❌ Contraseña incorrecta</p>
+        <p id="error-msg" style="color: var(--danger); margin-top: 10px; display: none;">❌ Contraseña incorrecta</p>
         <span onclick="recuperarClave()" style="color: var(--accent); font-size: 13px; margin-top: 25px; cursor: pointer; text-decoration: underline;">¿Olvidaste la contraseña?</span>
     </div>
 
-    <!-- CONTENIDO PRINCIPAL -->
+    <!-- CONTENIDO APP -->
     <div id="contenido-app">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h2>🏋️‍♂️ QUEENFIT Pro</h2>
             <div style="display: flex; gap: 8px;">
                 <button onclick="cargarDatosDesdeNube()" style="width: auto; padding: 6px 12px; font-size: 12px; background: #333; color: #fff;">🔄 Sincronizar</button>
-                <button onclick="cerrarSesion()" style="width: auto; padding: 6px 12px; font-size: 12px; background: #ff5252; color: #fff;">🔒 Salir</button>
+                <button onclick="cerrarSesion()" style="width: auto; padding: 6px 12px; font-size: 12px; background: var(--danger); color: #fff;">🔒 Salir</button>
             </div>
         </div>
         
@@ -212,15 +169,23 @@
 
             <div class="card">
                 <h3>Estado de Membresías</h3>
-                <!-- Buscador mejorado por Nombre o Celular -->
                 <input type="text" id="buscador" class="search-box" placeholder="🔍 Buscar por nombre o celular..." onkeyup="filtrarClientes()">
+                
+                <!-- 🔔 1. FILTROS RÁPIDOS DE ESTADO -->
+                <div class="contenedor-filtros-rapidos">
+                    <button id="f-todos" class="btn-filtro-rapido active-todos" onclick="cambiarFiltroRapido('todos')">Todos</button>
+                    <button id="f-vencidas" class="btn-filtro-rapido" onclick="cambiarFiltroRapido('vencidas')">Vencidas</button>
+                    <button id="f-porvencer" class="btn-filtro-rapido" onclick="cambiarFiltroRapido('porvencer')">Por Vencer</button>
+                    <button id="f-aldia" class="btn-filtro-rapido" onclick="cambiarFiltroRapido('aldia')">Al Día</button>
+                </div>
+
                 <div id="listaClientes"></div>
             </div>
         </div>
 
-        <!-- PESTAÑA HISTORIAL Y FINANZAS -->
+        <!-- PESTAÑA HISTORIAL, ASISTENCIA Y FINANZAS -->
         <div id="tab-historial" class="tab-content">
-            <!-- 📊 PANEL DE PRODUCCIÓN MENSUAL -->
+            <!-- 📊 2. PANEL FINANCIERO EJECUTIVO CON GRÁFICA -->
             <div class="card" style="border: 1px solid #333;">
                 <h3>📊 Cierre de Caja e Ingresos</h3>
                 <div class="grid-fechas">
@@ -233,8 +198,13 @@
                         <input type="date" id="filtro-hasta">
                     </div>
                 </div>
-                <button onclick="calcularFinanzas()" style="background: #00b0ff; color: #fff; padding: 10px;">📊 Calcular Producción del Periodo</button>
-                <div id="reporte-financiero" style="margin-top: 12px; font-size: 14px; line-height: 1.5; color: var(--accent);"></div>
+                <button onclick="calcularFinanzas()" style="background: var(--info); color: #fff; padding: 10px;">📊 Calcular Cierre de Periodo</button>
+                <div id="reporte-financiero" style="margin-top: 12px; font-size: 14px;"></div>
+                
+                <!-- Lienzo para la gráfica -->
+                <div style="max-height: 160px; margin-top: 15px;">
+                    <canvas id="graficaIngresos"></canvas>
+                </div>
             </div>
 
             <div class="card">
@@ -270,30 +240,26 @@
         let clientes = [];
         let historialPagos = [];
         let editandoId = null;
+        let filtroEstadoActual = 'todos';
+        let miGrafica = null;
 
-        if (sessionStorage.getItem('auth_gym_nube') === 'true') {
-            mostrarApp();
-        }
+        if (sessionStorage.getItem('auth_gym_nube') === 'true') { mostrarApp(); }
 
         function verificarAcceso() {
             const campoClave = document.getElementById('pass-input').value;
-            const errorMsg = document.getElementById('error-msg');
             if (campoClave === CLAVE_ACCESO) {
                 sessionStorage.setItem('auth_gym_nube', 'true');
                 mostrarApp();
             } else {
-                errorMsg.style.display = 'block';
+                document.getElementById('error-msg').style.display = 'block';
                 document.getElementById('pass-input').value = '';
             }
         }
 
         function recuperarClave() {
-            const respuesta = prompt("🔑 Recuperación: ¿Cuál es tu nombre de pila o palabra secreta de cosmiatría?").toLowerCase().trim();
-            if (respuesta === PALABRA_SECRETA) {
-                alert(`🔓 ¡Validación Exitosa! Tu contraseña de acceso a LA SALA es: ${CLAVE_ACCESO}`);
-            } else {
-                alert("❌ Respuesta incorrecta. No se puede revelar la clave.");
-            }
+            const respuesta = prompt("🔑 Recuperación: ¿Palabra secreta?").toLowerCase().trim();
+            if (respuesta === PALABRA_SECRETA) { alert(`🔓 Contraseña: ${CLAVE_ACCESO}`); } 
+            else { alert("❌ Incorrecta."); }
         }
 
         function mostrarApp() {
@@ -304,20 +270,14 @@
             cargarDatosDesdeNube();
         }
 
-        function cerrarSesion() {
-            sessionStorage.removeItem('auth_gym_nube');
-            window.location.reload();
-        }
+        function cerrarSesion() { sessionStorage.removeItem('auth_gym_nube'); window.location.reload(); }
 
         function cambiarPestaña(tabId, boton) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             boton.classList.add('active');
-            
-            if (tabId === 'tab-historial') {
-                renderizarHistorial();
-            }
+            if (tabId === 'tab-historial') { renderizarHistorial(); calcularFinanzas(); }
         }
 
         function establecerFechaDefecto() {
@@ -329,11 +289,8 @@
         function establecerFechasFiltroDefecto() {
             const hoy = new Date();
             const anio = hoy.getFullYear();
-            const mes = String(hoy.getMonth() + 1).padStart(2, '0'); // Ajusta el mes actual correctamente
-            
-            // Obtener el último día del mes actual de forma exacta
+            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
             const ultimoDiaMes = new Date(anio, hoy.getMonth() + 1, 0).getDate();
-            
             document.getElementById('filtro-desde').value = `${anio}-${mes}-01`;
             document.getElementById('filtro-hasta').value = `${anio}-${mes}-${String(ultimoDiaMes).padStart(2, '0')}`;
         }
@@ -344,7 +301,7 @@
         }
 
         async function cargarDatosDesdeNube() {
-            document.getElementById('status-cloud').innerText = "🔄 Sincronizando con Supabase Central...";
+            document.getElementById('status-cloud').innerText = "🔄 Sincronizando Base de Datos...";
             try {
                 const resClientes = await _supabase.from('clientes').select('*').order('nombre', { ascending: true });
                 if (resClientes.error) throw resClientes.error;
@@ -359,89 +316,54 @@
                 renderizarHistorial();
             } catch (error) {
                 console.error(error);
-                document.getElementById('status-cloud').innerText = "❌ Error en Nube. Verifica tus llaves API.";
+                document.getElementById('status-cloud').innerText = "❌ Error en Nube. Revisa llaves.";
             }
         }
 
         async function guardarCliente() {
-            const nombreInput = document.getElementById('nombre');
-            const telefonoInput = document.getElementById('telefono');
-            const valorInput = document.getElementById('valorMembresia');
-            const fechaInput = document.getElementById('fechaVence');
-
-            const nombre = nombreInput.value.trim();
-            const telefono = telefonoInput.value.trim().replace(/\s+/g, ''); // Remover espacios internos
-            let valorMembresia = valorInput.value.trim();
+            const nombre = document.getElementById('nombre').value.trim();
+            const telefono = document.getElementById('telefono').value.trim().replace(/\s+/g, '');
+            let valorMembresia = document.getElementById('valorMembresia').value.trim();
             if (!valorMembresia) valorMembresia = VALOR_POR_DEFECTO.toString();
-            const fechaVence = fechaInput.value;
+            const fechaVence = document.getElementById('fechaVence').value;
 
-            if (!nombre || !telefono || !fechaVence) {
-                alert('Por favor llena los campos obligatorios (Nombre, Celéfono y Fecha)');
-                return;
-            }
-
-            document.getElementById('status-cloud').innerText = "🚀 Procesando petición...";
+            if (!nombre || !telefono || !fechaVence) { alert('Llena los campos obligatorios'); return; }
 
             try {
                 if (editandoId === null) {
-                    // 🛡️ CONTROL ROBUSTO ANTI-HOMÓNIMOS (Por Celular único)
                     const celDuplicado = clientes.some(c => c.telefono === telefono);
-                    if (celDuplicado) {
-                        alert(`❌ ERROR DE REGISTRO:\nEl número celular "${telefono}" ya pertenece a otra alumna activa.\nNo puedes duplicar números de contacto en el sistema.`);
-                        document.getElementById('status-cloud').innerText = "Base de Datos QUEENFIT Online";
-                        return;
-                    }
+                    if (celDuplicado) { alert(`❌ El celular "${telefono}" ya pertenece a otra alumna.`); return; }
 
                     const { error } = await _supabase.from('clientes').insert([{ nombre, telefono, fechaVence, valorMembresia }]);
                     if (error) throw error;
 
                     const fechaHoy = new Date().toISOString().split('T')[0];
-                    await _supabase.from('historial').insert([{ 
-                        nombre, 
-                        fechaPago: fechaHoy, 
-                        concepto: `✨ INSCRIPCIÓN: Celular ${telefono} - Alta con Tarifa de ${formatearMoneda(valorMembresia)} (Monto: $0)` 
-                    }]);
-                    
-                    alert('¡Clienta registrada con éxito!');
+                    await _supabase.from('historial').insert([{ nombre, fechaPago: fechaHoy, concepto: `✨ INSCRIPCIÓN: Celular ${telefono} - Tarifa Inicial de ${formatearMoneda(valorMembresia)} (Monto: $0)` }]);
+                    alert('¡Registrada con éxito!');
                 } else {
-                    // MODO EDICIÓN
                     const { error } = await _supabase.from('clientes').update({ nombre, telefono, fechaVence, valorMembresia }).eq('id', editandoId);
                     if (error) throw error;
-
-                    const fechaHoy = new Date().toISOString().split('T')[0];
-                    await _supabase.from('historial').insert([{ 
-                        nombre, 
-                        fechaPago: fechaHoy, 
-                        concepto: `✏️ EDICIÓN: Parámetros actualizados. Celular: ${telefono} - Tarifa: ${formatearMoneda(valorMembresia)}` 
-                    }]);
-                    
-                    alert('¡Perfil modificado con éxito!');
+                    alert('¡Perfil modificado!');
                     cancelarEdicion();
                 }
-
-                nombreInput.value = '';
-                telefonoInput.value = '';
-                valorInput.value = '';
+                document.getElementById('nombre').value = '';
+                document.getElementById('telefono').value = '';
+                document.getElementById('valorMembresia').value = '';
                 establecerFechaDefecto();
                 cargarDatosDesdeNube();
-            } catch (error) {
-                alert("Error al guardar: " + error.message);
-            }
+            } catch (error) { alert("Error: " + error.message); }
         }
 
         function iniciarEdicion(index) {
             const cliente = clientes[index];
             editandoId = cliente.id;
-
             document.getElementById('nombre').value = cliente.nombre;
             document.getElementById('telefono').value = cliente.telefono;
             document.getElementById('valorMembresia').value = cliente.valorMembresia || "";
             document.getElementById('fechaVence').value = cliente.fechaVence;
-
-            document.getElementById('form-titulo').innerText = "✏️ Editar Datos de: " + cliente.nombre;
+            document.getElementById('form-titulo').innerText = "✏️ Editar: " + cliente.nombre;
             document.getElementById('btn-guardar').innerText = "Actualizar Clienta";
             document.getElementById('btn-cancelar').style.display = "block";
-
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -451,19 +373,19 @@
             document.getElementById('telefono').value = '';
             document.getElementById('valorMembresia').value = '';
             establecerFechaDefecto();
-
             document.getElementById('form-titulo').innerText = "Registrar Miembro";
             document.getElementById('btn-guardar').innerText = "Guardar y Sincronizar";
             document.getElementById('btn-cancelar').style.display = "none";
         }
 
+        // 🔄 RENOVACIÓN CON MEDIO DE PAGO + 🖨️ 4. RECIBO DIGITAL AUTOMÁTICO
         async function renovarMembresia(index) {
             const cliente = clientes[index];
             const precioMensual = parseInt(cliente.valorMembresia) || VALOR_POR_DEFECTO;
 
-            const mesesAPagarStr = prompt(`💵 REGISTRAR ABONO: ${cliente.nombre}\n¿Cuántos meses va a cancelar hoy?`, "1");
-            if (mesesAPagarStr === null) return; 
-            const meses = parseInt(mesesAPagarStr) || 1;
+            const mesesStr = prompt(`💵 REGISTRAR PAGO: ${cliente.nombre}\n¿Cuántos meses va a cancelar hoy?`, "1");
+            if (mesesStr === null) return; 
+            const meses = parseInt(mesesStr) || 1;
 
             const fechaHoyStr = new Date().toISOString().split('T')[0];
             const fechaPagoReal = prompt(`📅 Ingrese la FECHA REAL del cobro (Año-Mes-Día):`, fechaHoyStr);
@@ -475,55 +397,87 @@
 
             let fechaBase = new Date(cliente.fechaVence + 'T00:00:00');
             const hoy = new Date();
-            
-            if (fechaBase < hoy) {
-                fechaBase = hoy;
-            }
-            
+            if (fechaBase < hoy) { fechaBase = hoy; }
             fechaBase.setMonth(fechaBase.getMonth() + meses);
             const nuevaFechaStr = fechaBase.toISOString().split('T')[0];
             const totalRecibido = precioMensual * meses;
-            
-            document.getElementById('status-cloud').innerText = "⏳ Inyectando abono financiero en la nube...";
 
             try {
                 const { error } = await _supabase.from('clientes').update({ fechaVence: nuevaFechaStr, valorMembresia: precioMensual.toString() }).eq('id', cliente.id);
                 if (error) throw error;
 
-                // 🌟 IMPORTANTE: Guardamos la etiqueta [Monto: X] y (Medio) estructurado para que el calculador financiero de abajo los pueda leer y sumar
                 await _supabase.from('historial').insert([{
                     nombre: cliente.nombre,
                     fechaPago: fechaPagoReal,
                     concepto: `💵 PAGO MENSUALIDAD: [Monto: ${totalRecibido}] (${metodoTexto}) por ${meses} Mes(es). Vence: ${nuevaFechaStr}`
                 }]);
 
-                alert(`✅ ¡Abono Exitoso!\n${cliente.nombre} al día.\nTotal: ${formatearMoneda(totalRecibido)} via ${metodoTexto}.`);
+                // Generación de la plantilla de Recibo Digital para WhatsApp
+                const reciboDigital = `*==========================*%0A` +
+                                     `     🏋️‍♂️ *RECIBO DIGITAL QUEENFIT*     %0A` +
+                                     `*==========================*%0A` +
+                                     `*Cliente:* ${cliente.nombre}%0A` +
+                                     `*Fecha Pago:* ${fechaPagoReal}%0A` +
+                                     `*Concepto:* Mensualidad de Entrenamiento%0A` +
+                                     `*Meses Cancelados:* ${meses} mes(es)%0A` +
+                                     `*Medio:* ${metodoTexto}%0A` +
+                                     `--------------------------%0A` +
+                                     `*TOTAL RECIBIDO:* ${formatearMoneda(totalRecibido)}%0A` +
+                                     `--------------------------%0A` +
+                                     `*PROXIMO VENCIMIENTO:* ${nuevaFechaStr}%0A` +
+                                     `*==========================*%0A` +
+                                     `¡Gracias por entrenar con nosotros! 🥰🔥`;
+
+                alert(`✅ ¡Abono Exitoso!\nTotal: ${formatearMoneda(totalRecibido)}.`);
+                
+                if(confirm("🖨️ ¿Deseas enviarle su Comprobante de Pago Digital por WhatsApp en este momento?")) {
+                    window.open(`https://wa.me/${cliente.telefono}?text=${reciboDigital}`, '_blank');
+                }
+                
                 cargarDatosDesdeNube();
-            } catch (error) {
-                alert("No se pudo procesar: " + error.message);
-            }
+            } catch (error) { alert("Error: " + error.message); }
         }
 
-        // 🔍 CONSULTAR HISTORIAL INDIVIDUAL DE UNA SOLA CLIENTA
+        // ✔️ 3. REGISTRO DE ASISTENCIA DIARIA (CHECK-IN)
+        async function registrarAsistenciaAlumna(index) {
+            const cliente = clientes[index];
+            const ahora = new Date();
+            const fechaAsistencia = ahora.toISOString().split('T')[0];
+            const horaAsistencia = ahora.toTimeString().split(' ')[0];
+
+            try {
+                // Consultamos si ya se le marcó asistencia hoy para evitar marcar doble por error
+                const { data, error: errCheck } = await _supabase.from('asistencia').select('*').eq('nombre', cliente.nombre).eq('fecha_asistencia', fechaAsistencia);
+                if (errCheck) throw errCheck;
+
+                if (data && data.length > 0) {
+                    alert(`⚠️ Atención: Ya registraste la asistencia de ${cliente.nombre} el día de hoy.`);
+                    return;
+                }
+
+                // Insertar en la tabla de asistencia
+                const { error } = await _supabase.from('asistencia').insert([{ nombre: cliente.nombre, fecha_asistencia: fechaAsistencia, hora_asistencia: horaAsistencia }]);
+                if (error) throw error;
+
+                alert(`✔️ Check-in Exitoso: ${cliente.nombre} ingresó a la sala a las ${horaAsistencia}.`);
+            } catch (error) { alert("Error en asistencia: " + error.message); }
+        }
+
         function verHistorialAlumna(nombreAlumna) {
             cambiarPestaña('tab-historial', document.querySelectorAll('.tab-button')[1]);
-            document.getElementById('titulo-historial').innerText = `📜 Pagos de: ${nombreAlumna}`;
+            document.getElementById('titulo-historial').innerText = `📜 Movimientos de: ${nombreAlumna}`;
             document.getElementById('btn-ver-todos-historial').style.display = "block";
 
             const contenedor = document.getElementById('listaHistorial');
             contenedor.innerHTML = '';
 
             const filtrados = historialPagos.filter(h => h.nombre.toLowerCase() === nombreAlumna.toLowerCase());
-
-            if (filtrados.length === 0) {
-                contenedor.innerHTML = '<p style="color:var(--text-dim)">No hay movimientos registrados para esta alumna.</p>';
-                return;
-            }
+            if (filtrados.length === 0) { contenedor.innerHTML = '<p style="color:var(--text-dim)">Sin movimientos.</p>'; return; }
 
             filtrados.forEach((h) => {
                 contenedor.innerHTML += `
                     <div class="historial-item">
-                        <span style="color:var(--accent); font-weight:bold;">📅 Recibido: ${h.fechaPago}</span><br>
+                        <span style="color:var(--accent); font-weight:bold;">📅 Fecha: ${h.fechaPago}</span><br>
                         <span style="color:var(--text); font-size:13px;">${h.concepto}</span>
                     </div>
                 `;
@@ -536,79 +490,105 @@
             renderizarHistorial();
         }
 
-        // 📊 MOTOR FINANCIERO: RECORRE LA NUBE Y EFECTÚA EL CIERRE DE CAJA
+        // 📊 MOTOR FINANCIERO MEJORADO CON 📈 2. GRÁFICOS INTERACTIVOS (CHART.JS)
         function calcularFinanzas() {
             const desde = document.getElementById('filtro-desde').value;
             const hasta = document.getElementById('filtro-hasta').value;
             const reporteDiv = document.getElementById('reporte-financiero');
 
-            if (!desde || !hasta) {
-                alert("Por favor selecciona ambas fechas para el reporte.");
-                return;
-            }
+            if (!desde || !hasta) return;
 
-            let totalAcumulado = 0;
-            let totalTransferencias = 0;
-            let totalEfectivo = 0;
-            let transaccionesContadas = 0;
+            let totalAcumulado = 0, totalTransferencias = 0, totalEfectivo = 0, transaccionesContadas = 0;
 
             historialPagos.forEach(h => {
-                // Filtramos si la fecha del pago está dentro del rango
                 if (h.fechaPago >= desde && h.fechaPago <= hasta) {
-                    // Buscamos la etiqueta oculta [Monto: X] dentro del concepto del pago
                     const coincidenciaMonto = h.concepto.match(/\[Monto:\s*(\d+)\]/);
-                    
                     if (coincidenciaMonto) {
                         const monto = parseInt(coincidenciaMonto[1]) || 0;
                         totalAcumulado += monto;
                         transaccionesContadas++;
-
-                        // Identificamos el medio de pago
-                        if (h.concepto.includes("(Efectivo)")) {
-                            totalEfectivo += monto;
-                        } else {
-                            totalTransferencias += monto;
-                        }
+                        if (h.concepto.includes("(Efectivo)")) { totalEfectivo += monto; } 
+                        else { totalTransferencias += monto; }
                     }
                 }
             });
 
             reporteDiv.innerHTML = `
-                <div style="background:#2a2a2a; padding:12px; border-radius:8px; border-left:4px solid #00b0ff;">
-                    <strong>Periodo:</strong> ${desde} hasta ${hasta}<br>
-                    <strong>Abonos procesados:</strong> ${transaccionesContadas}<br><br>
-                    <span style="font-size:16px; color:#fff;">💰 Total Neto Producido: <strong style="color:var(--accent);">${formatearMoneda(totalAcumulado)}</strong></span><br>
-                    <span style="color:#00b0ff;">💳 Por Transferencia: ${formatearMoneda(totalTransferencias)}</span><br>
-                    <span style="color:#ffb300;">💵 En Efectivo: ${formatearMoneda(totalEfectivo)}</span>
+                <div style="background:#2a2a2a; padding:12px; border-radius:8px; border-left:4px solid #00b0ff; margin-top:5px;">
+                    <strong>Recaudos Contados:</strong> ${transaccionesContadas}<br>
+                    <span style="font-size:15px; color:#fff;">💰 Neto Producido: <strong style="color:var(--accent);">${formatearMoneda(totalAcumulado)}</strong></span><br>
+                    <span style="color:#00b0ff; font-size:13px;">💳 Transferencias: ${formatearMoneda(totalTransferencias)}</span> | 
+                    <span style="color:#ffb300; font-size:13px;">💵 Efectivo: ${formatearMoneda(totalEfectivo)}</span>
                 </div>
             `;
+
+            // Renderizar la gráfica interactiva de torta/barras en el iPhone
+            if (miGrafica) { miGrafica.destroy(); }
+            const ctx = document.getElementById('graficaIngresos').getContext('2d');
+            miGrafica = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Transferencias', 'Efectivo'],
+                    datasets: [{
+                        data: [totalTransferencias, totalEfectivo],
+                        backgroundColor: ['#00b0ff', '#ffb300'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#fff', font: { size: 11 } } } }
+                }
+            });
         }
 
-        // FILTRADO DINÁMICO POR NOMBRE O POR CELULAR
+        // 🔔 1. LÓGICA DE FILTROS RÁPIDOS DE ESTADO
+        function cambiarFiltroRapido(estado) {
+            filtroEstadoActual = estado;
+            document.querySelectorAll('.btn-filtro-rapido').forEach(btn => {
+                btn.className = 'btn-filtro-rapido';
+            });
+            
+            if(estado === 'todos') document.getElementById('f-todos').classList.add('active-todos');
+            if(estado === 'vencidas') document.getElementById('f-vencidas').classList.add('active-vencidas');
+            if(estado === 'porvencer') document.getElementById('f-porvencer').classList.add('active-porvencer');
+            if(estado === 'aldia') document.getElementById('f-aldia').classList.add('active-aldia');
+            
+            filtrarClientes();
+        }
+
         function filtrarClientes() {
             const textoBusqueda = document.getElementById('buscador').value.toLowerCase();
             const items = document.getElementsByClassName('cliente-item');
+            const hoyMs = new Date().setHours(0,0,0,0);
             
             for (let i = 0; i < items.length; i++) {
                 const nombreCliente = items[i].getAttribute('data-nombre').toLowerCase();
                 const celularCliente = items[i].getAttribute('data-celular');
+                const fechaVenceStr = items[i].getAttribute('data-vence');
                 
-                if (nombreCliente.includes(textoBusqueda) || celularCliente.includes(textoBusqueda)) {
-                    items[i].style.display = 'flex';
-                } else {
-                    items[i].style.display = 'none';
-                }
+                const fVence = new Date(fechaVenceStr + 'T00:00:00');
+                const diffTiempo = fVence - hoyMs;
+                const diasRestantes = Math.ceil(diffTiempo / (1000 * 60 * 60 * 24));
+
+                let cumpleFiltroEstado = false;
+                if (filtroEstadoActual === 'todos') cumpleFiltroEstado = true;
+                else if (filtroEstadoActual === 'vencidas' && diasRestantes <= 0) cumpleFiltroEstado = true;
+                else if (filtroEstadoActual === 'porvencer' && diasRestantes > 0 && diasRestantes <= 4) cumpleFiltroEstado = true;
+                else if (filtroEstadoActual === 'aldia' && diasRestantes > 4) cumpleFiltroEstado = true;
+
+                const cumpleTexto = nombreCliente.includes(textoBusqueda) || celularCliente.includes(textoBusqueda);
+
+                if (cumpleFiltroEstado && cumpleTexto) { items[i].style.display = 'flex'; } 
+                else { items[i].style.display = 'none'; }
             }
         }
 
         function renderizarClientes() {
             const contenedor = document.getElementById('listaClientes');
             contenedor.innerHTML = '';
-
-            if (clientes.length === 0) {
-                contenedor.innerHTML = '<p style="color:var(--text-dim)">No hay clientas en la base de datos.</p>';
-                return;
-            }
+            if (clientes.length === 0) { contenedor.innerHTML = '<p style="color:var(--text-dim)">Sin clientas.</p>'; return; }
 
             const hoyMs = new Date().setHours(0,0,0,0);
 
@@ -623,19 +603,19 @@
                 let plantillaMensaje = "";
                 
                 if (diasRestantes > 0) {
-                    claseEstado = "ok";
+                    if (diasRestantes <= 4) { claseEstado = "advertencia"; textoEstado = `¡Vence en ${diasRestantes} días!`; }
+                    else { claseEstado = "ok"; }
                     plantillaMensaje = `Hola ${c.nombre}, Apreciamos mucho que seas parte de esta familia QUEENFIT, te escribimos brevemente para recordarte que tu mensualidad de entreno vence el ${c.fechaVence}. Sabemos que el dia a dia es una locura y a veces nos pasa no te preocupes🥰, puedes realizar tus pagos en la llave @3104439749 cualquier duda que tengas estamos a un mensaje de distacia!!! Si ya pagaste omite el mensaje... ¡Te esperamos para seguir entrenando!`;
                 } else {
                     claseEstado = "vencer";
                     const diasVencidos = Math.abs(diasRestantes);
-                    
                     if (diasVencidos <= 30) {
-                        textoEstado = `Vencido hace ${diasVencidos} días (Debe: ${formatearMoneda(precioMensual)})`;
+                        textoEstado = `Vencido hace ${diasVencidos} días (${formatearMoneda(precioMensual)})`;
                         plantillaMensaje = `Hola ${c.nombre}, esperamos que estés muy bien. Te escribimos de parte de la familia QUEENFIT para recordarte que tu mensualidad de entreno ya se encuentra vencida desde el pasado ${c.fechaVence} (hace ${diasVencidos} días), presentando un saldo pendiente de ${formatearMoneda(precioMensual)}. Te invitamos a ponerte al día en la llave @3104439749 para continuar con toda la energía en tus entrenamientos. Si ya realizaste tu pago, por favor omite este mensaje 🥰. ¡Te esperamos en la sala!`;
                     } else {
                         const mesesDeuda = Math.floor(diasVencidos / 30);
                         const deudaTotalCalculada = precioMensual * mesesDeuda;
-                        textoEstado = `⚠️ Mora: ${mesesDeuda} Meses (Debe: ${formatearMoneda(deudaTotalCalculada)})`;
+                        textoEstado = `⚠️ Mora: ${mesesDeuda} Meses (${formatearMoneda(deudaTotalCalculada)})`;
                         plantillaMensaje = `Hola ${c.nombre}, de parte de la familia QUEENFIT nos comunicamos contigo porque registramos en el sistema que tu membresía venció desde el pasado ${c.fechaVence} y presentas un saldo pendiente acumulado de aproximadamente ${mesesDeuda} meses de entreno, correspondiente a un total de ${formatearMoneda(deudaTotalCalculada)}. Queremos invitarte a que te pongas al día mediante nuestra llave de pagos @3104439749 o te acerques para validar tu estado. Si ya cancelaste o tienes alguna duda, escríbenos con confianza 🥰. ¡Queremos seguir acompañándote en tus metas!`;
                     }
                 }
@@ -643,39 +623,34 @@
                 const mensajeEncoded = encodeURIComponent(plantillaMensaje);
                 const urlWa = `https://wa.me/${c.telefono}?text=${mensajeEncoded}`;
 
-                // Inyectamos atributos de búsqueda por celular y nombre
                 contenedor.innerHTML += `
-                    <div class="cliente-item" data-nombre="${c.nombre}" data-celular="${c.telefono}">
+                    <div class="cliente-item" data-nombre="${c.nombre}" data-celular="${c.telefono}" data-vence="${c.fechaVence}">
                         <div style="max-width: 45%;">
                             <strong>${c.nombre}</strong><br>
-                            <span style="font-size:12px; color:var(--text-dim)">📱 ${c.telefono}</span><br>
-                            <span class="${claseEstado}" style="font-size:13px;">${textoEstado}</span>
+                            <span style="font-size:11px; color:var(--text-dim)">📱 ${c.telefono}</span><br>
+                            <span class="${claseEstado}" style="font-size:12px;">${textoEstado}</span>
                         </div>
-                        <div style="display:flex; align-items:center; flex-wrap: wrap; justify-content: flex-end; gap: 4px;">
-                            <a href="${urlWa}" class="btn-wa" target="_blank">📱</a>
-                            <button class="btn-renovar" onclick="renovarMembresia(${index})">💵 Pagar</button>
-                            <button class="btn-perfil" onclick="verHistorialAlumna('${c.nombre}')">🔍</button>
-                            <button class="btn-editar" onclick="iniciarEdicion(${index})">✏️</button>
+                        <div style="display:flex; align-items:center; flex-wrap: wrap; justify-content: flex-end; gap: 3px;">
+                            <a href="${urlWa}" class="c-wa" target="_blank">📱</a>
+                            <button class="btn-accion-compacto c-asistencia" onclick="registrarAsistenciaAlumna(${index})">✔️</button>
+                            <button class="btn-accion-compacto c-pagar" onclick="renovarMembresia(${index})">💵</button>
+                            <button class="btn-accion-compacto c-perfil" onclick="verHistorialAlumna('${c.nombre}')">🔍</button>
+                            <button class="btn-accion-compacto c-editar" onclick="iniciarEdicion(${index})">✏️</button>
                         </div>
                     </div>
                 `;
             });
+            filtrarClientes(); // Ejecuta el filtro actual por si hay pestañas de estado activas
         }
 
         function renderizarHistorial() {
             const contenedor = document.getElementById('listaHistorial');
             contenedor.innerHTML = '';
-
-            if (historialPagos.length === 0) {
-                contenedor.innerHTML = '<p style="color:var(--text-dim)">Aún no hay registros de pagos en la nube.</p>';
-                return;
-            }
-
+            if (historialPagos.length === 0) { contenedor.innerHTML = '<p style="color:var(--text-dim)">Sin movimientos.</p>'; return; }
             historialPagos.forEach((h) => {
                 contenedor.innerHTML += `
                     <div class="historial-item">
-                        <span style="color:var(--accent); font-weight:bold;">📅 Fecha: ${h.fechaPago}</span> - 
-                        <strong>${h.nombre}</strong><br>
+                        <span style="color:var(--accent); font-weight:bold;">📅 Fecha: ${h.fechaPago}</span> - <strong>${h.nombre}</strong><br>
                         <span style="color:var(--text-dim); font-size:13px;">${h.concepto}</span>
                     </div>
                 `;
