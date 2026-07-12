@@ -74,7 +74,7 @@
             border: none;
             width: auto;
             margin: 0;
-            margin-left: 5px;
+            margin-left: 3px;
         }
         .btn-editar {
             background: #ffb300;
@@ -86,7 +86,19 @@
             border: none;
             width: auto;
             margin: 0;
-            margin-left: 5px;
+            margin-left: 3px;
+        }
+        .btn-perfil {
+            background: #9c27b0;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            width: auto;
+            margin: 0;
+            margin-left: 3px;
         }
         #status-cloud {
             text-align: center;
@@ -152,6 +164,14 @@
             padding: 10px 0;
             font-size: 14px;
         }
+        
+        .grid-fechas {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .grid-fechas div { flex: 1; }
+        .grid-fechas label { font-size: 12px; color: var(--text-dim); }
     </style>
 </head>
 <body>
@@ -183,8 +203,8 @@
             <div class="card">
                 <h3 id="form-titulo">Registrar Miembro</h3>
                 <input type="text" id="nombre" placeholder="Nombre Completo">
-                <input type="tel" id="telefono" placeholder="Teléfono (ej: 573001234567)">
-                <input type="number" id="valorMembresia" placeholder="Valor Mensualidad $ (ej: 70000)">
+                <input type="tel" id="telefono" placeholder="Teléfono celular (Único)">
+                <input type="number" id="valorMembresia" placeholder="Valor Mensualidad $ (Defecto: 70000)">
                 <input type="date" id="fechaVence">
                 <button id="btn-guardar" onclick="guardarCliente()">Guardar y Sincronizar</button>
                 <button id="btn-cancelar" onclick="cancelarEdicion()" style="background:#555; color:#fff; display:none; margin-top: 5px;">Cancelar Edición</button>
@@ -192,16 +212,36 @@
 
             <div class="card">
                 <h3>Estado de Membresías</h3>
-                <input type="text" id="buscador" class="search-box" placeholder="🔍 Buscar alumna por nombre..." onkeyup="filtrarClientes()">
+                <!-- Buscador mejorado por Nombre o Celular -->
+                <input type="text" id="buscador" class="search-box" placeholder="🔍 Buscar por nombre o celular..." onkeyup="filtrarClientes()">
                 <div id="listaClientes"></div>
             </div>
         </div>
 
-        <!-- PESTAÑA HISTORIAL -->
+        <!-- PESTAÑA HISTORIAL Y FINANZAS -->
         <div id="tab-historial" class="tab-content">
+            <!-- 📊 PANEL DE PRODUCCIÓN MENSUAL -->
+            <div class="card" style="border: 1px solid #333;">
+                <h3>📊 Cierre de Caja e Ingresos</h3>
+                <div class="grid-fechas">
+                    <div>
+                        <label>Desde:</label>
+                        <input type="date" id="filtro-desde">
+                    </div>
+                    <div>
+                        <label>Hasta:</label>
+                        <input type="date" id="filtro-hasta">
+                    </div>
+                </div>
+                <button onclick="calcularFinanzas()" style="background: #00b0ff; color: #fff; padding: 10px;">📊 Calcular Producción del Periodo</button>
+                <div id="reporte-financiero" style="margin-top: 12px; font-size: 14px; line-height: 1.5; color: var(--accent);"></div>
+            </div>
+
             <div class="card">
-                <h3>📜 Registro Histórico de Pagos</h3>
-                <p style="color: var(--text-dim); font-size: 12px;">Aquí se guardan las renovaciones de mensualidad de forma permanente.</p>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 id="titulo-historial">📜 Registro Histórico Global</h3>
+                    <button id="btn-ver-todos-historial" onclick="verHistorialGlobal()" style="display:none; width:auto; padding:4px 10px; font-size:11px; background:#444; color:#fff;">Ver Todos</button>
+                </div>
                 <div id="listaHistorial"></div>
             </div>
         </div>
@@ -219,7 +259,8 @@
 
     <script>
         const CLAVE_ACCESO = "1876"; 
-        const PALABRA_SECRETA = "majo"; // 🔑 Esta palabra te recordará la contraseña si la olvidas
+        const PALABRA_SECRETA = "majo"; 
+        const VALOR_POR_DEFECTO = 70000; 
         
         const SUPABASE_URL = "https://hvinbsrtwllpdppgxdpw.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_aLuAKNoFHcKZvb9jq2mAXw_8Ioa-vQJ";
@@ -259,6 +300,7 @@
             document.getElementById('pantalla-bloqueo').style.display = 'none';
             document.getElementById('contenido-app').style.display = 'block';
             establecerFechaDefecto();
+            establecerFechasFiltroDefecto();
             cargarDatosDesdeNube();
         }
 
@@ -282,6 +324,15 @@
             const hoy = new Date();
             hoy.setMonth(hoy.getMonth() + 1);
             document.getElementById('fechaVence').value = hoy.toISOString().split('T')[0];
+        }
+
+        function establecerFechasFiltroDefecto() {
+            const hoy = new Date();
+            const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+            
+            document.getElementById('filtro-desde').value = primerDia.toISOString().split('T')[0];
+            document.getElementById('filtro-hasta').value = ultimoDia.toISOString().split('T')[0];
         }
 
         function formatearMoneda(valor) {
@@ -316,34 +367,52 @@
             const fechaInput = document.getElementById('fechaVence');
 
             const nombre = nombreInput.value.trim();
-            const telefono = telefonoInput.value.trim();
-            const valorMembresia = valorInput.value.trim() || "0";
+            const telefono = telefonoInput.value.trim().replace(/\s+/g, ''); // Remover espacios internos
+            let valorMembresia = valorInput.value.trim();
+            if (!valorMembresia) valorMembresia = VALOR_POR_DEFECTO.toString();
             const fechaVence = fechaInput.value;
 
             if (!nombre || !telefono || !fechaVence) {
-                alert('Por favor llena los campos obligatorios (Nombre, Teléfono y Fecha)');
+                alert('Por favor llena los campos obligatorios (Nombre, Celéfono y Fecha)');
                 return;
             }
 
-            document.getElementById('status-cloud').innerText = "🚀 Guardando cambios en la nube...";
+            document.getElementById('status-cloud').innerText = "🚀 Procesando petición...";
 
             try {
                 if (editandoId === null) {
+                    // 🛡️ CONTROL ROBUSTO ANTI-HOMÓNIMOS (Por Celular único)
+                    const celDuplicado = clientes.some(c => c.telefono === telefono);
+                    if (celDuplicado) {
+                        alert(`❌ ERROR DE REGISTRO:\nEl número celular "${telefono}" ya pertenece a otra alumna activa.\nNo puedes duplicar números de contacto en el sistema.`);
+                        document.getElementById('status-cloud').innerText = "Base de Datos QUEENFIT Online";
+                        return;
+                    }
+
                     const { error } = await _supabase.from('clientes').insert([{ nombre, telefono, fechaVence, valorMembresia }]);
                     if (error) throw error;
 
                     const fechaHoy = new Date().toISOString().split('T')[0];
-                    await _supabase.from('historial').insert([{ nombre, fechaPago: fechaHoy, concepto: `Inscripción / Plan inicial asignado (${formatearMoneda(valorMembresia)})` }]);
+                    await _supabase.from('historial').insert([{ 
+                        nombre, 
+                        fechaPago: fechaHoy, 
+                        concepto: `✨ INSCRIPCIÓN: Celular ${telefono} - Alta con Tarifa de ${formatearMoneda(valorMembresia)} (Monto: $0)` 
+                    }]);
                     
-                    alert('¡Clienta registrada permanentemente!');
+                    alert('¡Clienta registrada con éxito!');
                 } else {
+                    // MODO EDICIÓN
                     const { error } = await _supabase.from('clientes').update({ nombre, telefono, fechaVence, valorMembresia }).eq('id', editandoId);
                     if (error) throw error;
 
                     const fechaHoy = new Date().toISOString().split('T')[0];
-                    await _supabase.from('historial').insert([{ nombre, fechaPago: fechaHoy, concepto: "Perfil actualizado y ajuste de parámetros de cobro" }]);
+                    await _supabase.from('historial').insert([{ 
+                        nombre, 
+                        fechaPago: fechaHoy, 
+                        concepto: `✏️ EDICIÓN: Parámetros actualizados. Celular: ${telefono} - Tarifa: ${formatearMoneda(valorMembresia)}` 
+                    }]);
                     
-                    alert('¡Datos actualizados con éxito!');
+                    alert('¡Perfil modificado con éxito!');
                     cancelarEdicion();
                 }
 
@@ -353,7 +422,7 @@
                 establecerFechaDefecto();
                 cargarDatosDesdeNube();
             } catch (error) {
-                alert("Error al guardar en la base de datos: " + error.message);
+                alert("Error al guardar: " + error.message);
             }
         }
 
@@ -385,26 +454,25 @@
             document.getElementById('btn-cancelar').style.display = "none";
         }
 
-        // 🔄 NUEVA RENOVACIÓN INTELIGENTE: SACA DE MORA Y PREGUNTA DETALLES DEL PAGO
         async function renovarMembresia(index) {
             const cliente = clientes[index];
-            const precioMensual = parseInt(cliente.valorMembresia) || 0;
+            const precioMensual = parseInt(cliente.valorMembresia) || VALOR_POR_DEFECTO;
 
-            // 1. Preguntar cuántos meses va a pagar
-            const mesesAPagarStr = prompt(`💵 SACAR DE MORA A: ${cliente.nombre}\n¿Cuántos meses va a cancelar hoy?`, "1");
-            if (mesesAPagarStr === null) return; // Canceló la operación
+            const mesesAPagarStr = prompt(`💵 REGISTRAR ABONO: ${cliente.nombre}\n¿Cuántos meses va a cancelar hoy?`, "1");
+            if (mesesAPagarStr === null) return; 
             const meses = parseInt(mesesAPagarStr) || 1;
 
-            // 2. Preguntar la fecha real en la que hizo el pago
             const fechaHoyStr = new Date().toISOString().split('T')[0];
-            const fechaPagoReal = prompt(`📅 Ingrese la FECHA REAL en la que recibió el dinero (Año-Mes-Día):`, fechaHoyStr);
+            const fechaPagoReal = prompt(`📅 Ingrese la FECHA REAL del cobro (Año-Mes-Día):`, fechaHoyStr);
             if (fechaPagoReal === null) return;
 
-            // 3. Calcular nueva fecha de vencimiento extendida
+            const metodoInput = prompt(`💳 Método de pago:\n1 - Transferencia\n2 - Efectivo`, "1");
+            if (metodoInput === null) return;
+            const metodoTexto = (metodoInput.trim() === "2") ? "Efectivo" : "Transferencia";
+
             let fechaBase = new Date(cliente.fechaVence + 'T00:00:00');
             const hoy = new Date();
             
-            // Si ya estaba vencida, la fecha base arranca desde hoy para no acumular mora falsa
             if (fechaBase < hoy) {
                 fechaBase = hoy;
             }
@@ -413,34 +481,116 @@
             const nuevaFechaStr = fechaBase.toISOString().split('T')[0];
             const totalRecibido = precioMensual * meses;
             
-            document.getElementById('status-cloud').innerText = "⏳ Procesando abono y sacando de mora...";
+            document.getElementById('status-cloud').innerText = "⏳ Inyectando abono financiero en la nube...";
 
             try {
-                // Actualizar fecha en Supabase
-                const { error } = await _supabase.from('clientes').update({ fechaVence: nuevaFechaStr }).eq('id', cliente.id);
+                const { error } = await _supabase.from('clientes').update({ fechaVence: nuevaFechaStr, valorMembresia: precioMensual.toString() }).eq('id', cliente.id);
                 if (error) throw error;
 
-                // Añadir al Historial con los datos reales ingresados
+                // 🌟 IMPORTANTE: Guardamos la etiqueta [Monto: X] y (Medio) estructurado para que el calculador financiero de abajo los pueda leer y sumar
                 await _supabase.from('historial').insert([{
                     nombre: cliente.nombre,
                     fechaPago: fechaPagoReal,
-                    concepto: `Recibido: ${formatearMoneda(totalRecibido)} por ${meses} Mes(es) de entreno. (Nuevo vencimiento: ${nuevaFechaStr})`
+                    concepto: `💵 PAGO MENSUALIDAD: [Monto: ${totalRecibido}] (${metodoTexto}) por ${meses} Mes(es). Vence: ${nuevaFechaStr}`
                 }]);
 
-                alert(`✅ ¡Éxito!\n${cliente.nombre} ha salido de mora.\nTotal ingresado: ${formatearMoneda(totalRecibido)}\nPróximo Vence: ${nuevaFechaStr}`);
+                alert(`✅ ¡Abono Exitoso!\n${cliente.nombre} al día.\nTotal: ${formatearMoneda(totalRecibido)} via ${metodoTexto}.`);
                 cargarDatosDesdeNube();
             } catch (error) {
-                alert("No se pudo procesar el pago: " + error.message);
+                alert("No se pudo procesar: " + error.message);
             }
         }
 
+        // 🔍 CONSULTAR HISTORIAL INDIVIDUAL DE UNA SOLA CLIENTA
+        function verHistorialAlumna(nombreAlumna) {
+            cambiarPestaña('tab-historial', document.querySelectorAll('.tab-button')[1]);
+            document.getElementById('titulo-historial').innerText = `📜 Pagos de: ${nombreAlumna}`;
+            document.getElementById('btn-ver-todos-historial').style.display = "block";
+
+            const contenedor = document.getElementById('listaHistorial');
+            contenedor.innerHTML = '';
+
+            const filtrados = historialPagos.filter(h => h.nombre.toLowerCase() === nombreAlumna.toLowerCase());
+
+            if (filtrados.length === 0) {
+                contenedor.innerHTML = '<p style="color:var(--text-dim)">No hay movimientos registrados para esta alumna.</p>';
+                return;
+            }
+
+            filtrados.forEach((h) => {
+                contenedor.innerHTML += `
+                    <div class="historial-item">
+                        <span style="color:var(--accent); font-weight:bold;">📅 Recibido: ${h.fechaPago}</span><br>
+                        <span style="color:var(--text); font-size:13px;">${h.concepto}</span>
+                    </div>
+                `;
+            });
+        }
+
+        function verHistorialGlobal() {
+            document.getElementById('titulo-historial').innerText = "📜 Registro Histórico Global";
+            document.getElementById('btn-ver-todos-historial').style.display = "none";
+            renderizarHistorial();
+        }
+
+        // 📊 MOTOR FINANCIERO: RECORRE LA NUBE Y EFECTÚA EL CIERRE DE CAJA
+        function calcularFinanzas() {
+            const desde = document.getElementById('filtro-desde').value;
+            const hasta = document.getElementById('filtro-hasta').value;
+            const reporteDiv = document.getElementById('reporte-financiero');
+
+            if (!desde || !hasta) {
+                alert("Por favor selecciona ambas fechas para el reporte.");
+                return;
+            }
+
+            let totalAcumulado = 0;
+            let totalTransferencias = 0;
+            let totalEfectivo = 0;
+            let transaccionesContadas = 0;
+
+            historialPagos.forEach(h => {
+                // Filtramos si la fecha del pago está dentro del rango
+                if (h.fechaPago >= desde && h.fechaPago <= hasta) {
+                    // Buscamos la etiqueta oculta [Monto: X] dentro del concepto del pago
+                    const coincidenciaMonto = h.concepto.match(/\[Monto:\s*(\d+)\]/);
+                    
+                    if (coincidenciaMonto) {
+                        const monto = parseInt(coincidenciaMonto[1]) || 0;
+                        totalAcumulado += monto;
+                        transaccionesContadas++;
+
+                        // Identificamos el medio de pago
+                        if (h.concepto.includes("(Efectivo)")) {
+                            totalEfectivo += monto;
+                        } else {
+                            totalTransferencias += monto;
+                        }
+                    }
+                }
+            });
+
+            reporteDiv.innerHTML = `
+                <div style="background:#2a2a2a; padding:12px; border-radius:8px; border-left:4px solid #00b0ff;">
+                    <strong>Periodo:</strong> ${desde} hasta ${hasta}<br>
+                    <strong>Abonos procesados:</strong> ${transaccionesContadas}<br><br>
+                    <span style="font-size:16px; color:#fff;">💰 Total Neto Producido: <strong style="color:var(--accent);">${formatearMoneda(totalAcumulado)}</strong></span><br>
+                    <span style="color:#00b0ff;">💳 Por Transferencia: ${formatearMoneda(totalTransferencias)}</span><br>
+                    <span style="color:#ffb300;">💵 En Efectivo: ${formatearMoneda(totalEfectivo)}</span>
+                </div>
+            `;
+        }
+
+        // FILTRADO DINÁMICO POR NOMBRE O POR CELULAR
         function filtrarClientes() {
             const textoBusqueda = document.getElementById('buscador').value.toLowerCase();
             const items = document.getElementsByClassName('cliente-item');
             
             for (let i = 0; i < items.length; i++) {
                 const nombreCliente = items[i].getAttribute('data-nombre').toLowerCase();
-                if (nombreCliente.includes(textoBusqueda)) {
+                const celularCliente = items[i].getAttribute('data-celular');
+                
+                if (nombreCliente.includes(textoBusqueda) || celularCliente.includes(textoBusqueda)) {
                     items[i].style.display = 'flex';
                 } else {
                     items[i].style.display = 'none';
@@ -453,7 +603,7 @@
             contenedor.innerHTML = '';
 
             if (clientes.length === 0) {
-                contenedor.innerHTML = '<p style="color:var(--text-dim)">No hay clientas registradas en la base de datos.</p>';
+                contenedor.innerHTML = '<p style="color:var(--text-dim)">No hay clientas en la base de datos.</p>';
                 return;
             }
 
@@ -463,7 +613,7 @@
                 const fVence = new Date(c.fechaVence + 'T00:00:00');
                 const diffTiempo = fVence - hoyMs;
                 const diasRestantes = Math.ceil(diffTiempo / (1000 * 60 * 60 * 24));
-                const precioMensual = parseInt(c.valorMembresia) || 0;
+                const precioMensual = parseInt(c.valorMembresia) || VALOR_POR_DEFECTO;
 
                 let claseEstado = "ok";
                 let textoEstado = `${diasRestantes} días restantes`;
@@ -490,16 +640,18 @@
                 const mensajeEncoded = encodeURIComponent(plantillaMensaje);
                 const urlWa = `https://wa.me/${c.telefono}?text=${mensajeEncoded}`;
 
+                // Inyectamos atributos de búsqueda por celular y nombre
                 contenedor.innerHTML += `
-                    <div class="cliente-item" data-nombre="${c.nombre}">
-                        <div style="max-width: 55%;">
+                    <div class="cliente-item" data-nombre="${c.nombre}" data-celular="${c.telefono}">
+                        <div style="max-width: 45%;">
                             <strong>${c.nombre}</strong><br>
-                            <span class="${claseEstado}">${textoEstado}</span><br>
-                            <span style="font-size: 12px; color: var(--text-dim)">Mensualidad: ${formatearMoneda(precioMensual)}</span>
+                            <span style="font-size:12px; color:var(--text-dim)">📱 ${c.telefono}</span><br>
+                            <span class="${claseEstado}" style="font-size:13px;">${textoEstado}</span>
                         </div>
                         <div style="display:flex; align-items:center; flex-wrap: wrap; justify-content: flex-end; gap: 4px;">
-                            <a href="${urlWa}" class="btn-wa" target="_blank">📱 Avisar</a>
+                            <a href="${urlWa}" class="btn-wa" target="_blank">📱</a>
                             <button class="btn-renovar" onclick="renovarMembresia(${index})">💵 Pagar</button>
+                            <button class="btn-perfil" onclick="verHistorialAlumna('${c.nombre}')">🔍</button>
                             <button class="btn-editar" onclick="iniciarEdicion(${index})">✏️</button>
                         </div>
                     </div>
@@ -519,7 +671,7 @@
             historialPagos.forEach((h) => {
                 contenedor.innerHTML += `
                     <div class="historial-item">
-                        <span style="color:var(--accent); font-weight:bold;">📅 Fecha Recibido: ${h.fechaPago}</span> - 
+                        <span style="color:var(--accent); font-weight:bold;">📅 Fecha: ${h.fechaPago}</span> - 
                         <strong>${h.nombre}</strong><br>
                         <span style="color:var(--text-dim); font-size:13px;">${h.concepto}</span>
                     </div>
