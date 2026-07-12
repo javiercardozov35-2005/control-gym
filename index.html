@@ -52,7 +52,6 @@
         input, select { background: #2a2a2a; color: #fff; }
         button { background: var(--accent); color: #000; font-weight: bold; cursor: pointer; }
         
-        /* Filtros rápidos de estado */
         .contenedor-filtros-rapidos {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -85,7 +84,6 @@
         .advertencia { color: var(--warning); font-weight: bold; }
         .ok { color: var(--accent); }
         
-        /* Botones compactos iPhone de control */
         .btn-accion-compacto {
             padding: 6px 10px;
             border-radius: 6px;
@@ -171,7 +169,6 @@
                 <h3>Estado de Membresías</h3>
                 <input type="text" id="buscador" class="search-box" placeholder="🔍 Buscar por nombre o celular..." onkeyup="filtrarClientes()">
                 
-                <!-- 🔔 1. FILTROS RÁPIDOS DE ESTADO -->
                 <div class="contenedor-filtros-rapidos">
                     <button id="f-todos" class="btn-filtro-rapido active-todos" onclick="cambiarFiltroRapido('todos')">Todos</button>
                     <button id="f-vencidas" class="btn-filtro-rapido" onclick="cambiarFiltroRapido('vencidas')">Vencidas</button>
@@ -183,9 +180,8 @@
             </div>
         </div>
 
-        <!-- PESTAÑA HISTORIAL, ASISTENCIA Y FINANZAS -->
+        <!-- PESTAÑA HISTORIAL Y FINANZAS -->
         <div id="tab-historial" class="tab-content">
-            <!-- 📊 2. PANEL FINANCIERO EJECUTIVO CON GRÁFICA -->
             <div class="card" style="border: 1px solid #333;">
                 <h3>📊 Cierre de Caja e Ingresos</h3>
                 <div class="grid-fechas">
@@ -201,7 +197,6 @@
                 <button onclick="calcularFinanzas()" style="background: var(--info); color: #fff; padding: 10px;">📊 Calcular Cierre de Periodo</button>
                 <div id="reporte-financiero" style="margin-top: 12px; font-size: 14px;"></div>
                 
-                <!-- Lienzo para la gráfica -->
                 <div style="max-height: 160px; margin-top: 15px;">
                     <canvas id="graficaIngresos"></canvas>
                 </div>
@@ -316,7 +311,7 @@
                 renderizarHistorial();
             } catch (error) {
                 console.error(error);
-                document.getElementById('status-cloud').innerText = "❌ Error en Nube. Revisa llaves.";
+                document.getElementById('status-cloud').innerText = "❌ Error en Nube.";
             }
         }
 
@@ -324,7 +319,7 @@
             const nombre = document.getElementById('nombre').value.trim();
             const telefono = document.getElementById('telefono').value.trim().replace(/\s+/g, '');
             let valorMembresia = document.getElementById('valorMembresia').value.trim();
-            if (!valorMembresia) valorMembresia = VALOR_POR_DEFECTO.toString();
+            if (!valorMembresia) valorMembresia = VALOR_POR_DEFONT_VALOR_POR_DEFECTO = VALOR_POR_DEFECTO.toString();
             const fechaVence = document.getElementById('fechaVence').value;
 
             if (!nombre || !telefono || !fechaVence) { alert('Llena los campos obligatorios'); return; }
@@ -378,7 +373,7 @@
             document.getElementById('btn-cancelar').style.display = "none";
         }
 
-        // 🔄 RENOVACIÓN CON MEDIO DE PAGO + 🖨️ 4. RECIBO DIGITAL AUTOMÁTICO
+        // 🔄 CORRECCIÓN DEL RECIBO: SE ENVÍA DE FORMA NATIVA Y SEGURA POR REDIRECCIÓN DIRECTA
         async function renovarMembresia(index) {
             const cliente = clientes[index];
             const precioMensual = parseInt(cliente.valorMembresia) || VALOR_POR_DEFECTO;
@@ -412,7 +407,6 @@
                     concepto: `💵 PAGO MENSUALIDAD: [Monto: ${totalRecibido}] (${metodoTexto}) por ${meses} Mes(es). Vence: ${nuevaFechaStr}`
                 }]);
 
-                // Generación de la plantilla de Recibo Digital para WhatsApp
                 const reciboDigital = `*==========================*%0A` +
                                      `     🏋️‍♂️ *RECIBO DIGITAL QUEENFIT*     %0A` +
                                      `*==========================*%0A` +
@@ -430,37 +424,13 @@
 
                 alert(`✅ ¡Abono Exitoso!\nTotal: ${formatearMoneda(totalRecibido)}.`);
                 
+                // Redirección directa nativa para evitar bloqueos del navegador de iOS
                 if(confirm("🖨️ ¿Deseas enviarle su Comprobante de Pago Digital por WhatsApp en este momento?")) {
-                    window.open(`https://wa.me/${cliente.telefono}?text=${reciboDigital}`, '_blank');
+                    window.location.href = `https://wa.me/${cliente.telefono}?text=${reciboDigital}`;
+                } else {
+                    cargarDatosDesdeNube();
                 }
-                
-                cargarDatosDesdeNube();
             } catch (error) { alert("Error: " + error.message); }
-        }
-
-        // ✔️ 3. REGISTRO DE ASISTENCIA DIARIA (CHECK-IN)
-        async function registrarAsistenciaAlumna(index) {
-            const cliente = clientes[index];
-            const ahora = new Date();
-            const fechaAsistencia = ahora.toISOString().split('T')[0];
-            const horaAsistencia = ahora.toTimeString().split(' ')[0];
-
-            try {
-                // Consultamos si ya se le marcó asistencia hoy para evitar marcar doble por error
-                const { data, error: errCheck } = await _supabase.from('asistencia').select('*').eq('nombre', cliente.nombre).eq('fecha_asistencia', fechaAsistencia);
-                if (errCheck) throw errCheck;
-
-                if (data && data.length > 0) {
-                    alert(`⚠️ Atención: Ya registraste la asistencia de ${cliente.nombre} el día de hoy.`);
-                    return;
-                }
-
-                // Insertar en la tabla de asistencia
-                const { error } = await _supabase.from('asistencia').insert([{ nombre: cliente.nombre, fecha_asistencia: fechaAsistencia, hora_asistencia: horaAsistencia }]);
-                if (error) throw error;
-
-                alert(`✔️ Check-in Exitoso: ${cliente.nombre} ingresó a la sala a las ${horaAsistencia}.`);
-            } catch (error) { alert("Error en asistencia: " + error.message); }
         }
 
         function verHistorialAlumna(nombreAlumna) {
@@ -490,7 +460,6 @@
             renderizarHistorial();
         }
 
-        // 📊 MOTOR FINANCIERO MEJORADO CON 📈 2. GRÁFICOS INTERACTIVOS (CHART.JS)
         function calcularFinanzas() {
             const desde = document.getElementById('filtro-desde').value;
             const hasta = document.getElementById('filtro-hasta').value;
@@ -522,7 +491,6 @@
                 </div>
             `;
 
-            // Renderizar la gráfica interactiva de torta/barras en el iPhone
             if (miGrafica) { miGrafica.destroy(); }
             const ctx = document.getElementById('graficaIngresos').getContext('2d');
             miGrafica = new Chart(ctx, {
@@ -543,12 +511,9 @@
             });
         }
 
-        // 🔔 1. LÓGICA DE FILTROS RÁPIDOS DE ESTADO
         function cambiarFiltroRapido(estado) {
             filtroEstadoActual = estado;
-            document.querySelectorAll('.btn-filtro-rapido').forEach(btn => {
-                btn.className = 'btn-filtro-rapido';
-            });
+            document.querySelectorAll('.btn-filtro-rapido').forEach(btn => { btn.className = 'btn-filtro-rapido'; });
             
             if(estado === 'todos') document.getElementById('f-todos').classList.add('active-todos');
             if(estado === 'vencidas') document.getElementById('f-vencidas').classList.add('active-vencidas');
@@ -609,14 +574,19 @@
                 } else {
                     claseEstado = "vencer";
                     const diasVencidos = Math.abs(diasRestantes);
+                    
+                    // 💡 LÓGICA DE FECHA DE ATRASO: Calculamos el mes exacto en el pasado restando los días de retraso
+                    let fechaCorteReal = new Date(fVence);
+                    const fechaCorteFormateada = fechaCorteReal.toISOString().split('T')[0];
+
                     if (diasVencidos <= 30) {
                         textoEstado = `Vencido hace ${diasVencidos} días (${formatearMoneda(precioMensual)})`;
-                        plantillaMensaje = `Hola ${c.nombre}, esperamos que estés muy bien. Te escribimos de parte de la familia QUEENFIT para recordarte que tu mensualidad de entreno ya se encuentra vencida desde el pasado ${c.fechaVence} (hace ${diasVencidos} días), presentando un saldo pendiente de ${formatearMoneda(precioMensual)}. Te invitamos a ponerte al día en la llave @3104439749 para continuar con toda la energía en tus entrenamientos. Si ya realizaste tu pago, por favor omite este mensaje 🥰. ¡Te esperamos en la sala!`;
+                        plantillaMensaje = `Hola ${c.nombre}, esperamos que estés muy bien. Te escribimos de parte de la familia QUEENFIT para recordarte que tu mensualidad de entreno ya se encuentra vencida desde el pasado ${fechaCorteFormateada} (hace ${diasVencidos} días), presentando un saldo pendiente de ${formatearMoneda(precioMensual)}. Te invitamos a ponerte al día en la llave @3104439749 para continuar con toda la energía en tus entrenamientos. Si ya realizaste tu pago, por favor omite este mensaje 🥰. ¡Te esperamos en la sala!`;
                     } else {
                         const mesesDeuda = Math.floor(diasVencidos / 30);
                         const deudaTotalCalculada = precioMensual * mesesDeuda;
                         textoEstado = `⚠️ Mora: ${mesesDeuda} Meses (${formatearMoneda(deudaTotalCalculada)})`;
-                        plantillaMensaje = `Hola ${c.nombre}, de parte de la familia QUEENFIT nos comunicamos contigo porque registramos en el sistema que tu membresía venció desde el pasado ${c.fechaVence} y presentas un saldo pendiente acumulado de aproximadamente ${mesesDeuda} meses de entreno, correspondiente a un total de ${formatearMoneda(deudaTotalCalculada)}. Queremos invitarte a que te pongas al día mediante nuestra llave de pagos @3104439749 o te acerques para validar tu estado. Si ya cancelaste o tienes alguna duda, escríbenos con confianza 🥰. ¡Queremos seguir acompañándote en tus metas!`;
+                        plantillaMensaje = `Hola ${c.nombre}, de parte de la familia QUEENFIT nos comunicamos contigo porque registramos en el sistema que tu membresía venció desde el pasado ${fechaCorteFormateada} y presentas un saldo pendiente acumulado de aproximadamente ${mesesDeuda} meses de entreno, correspondiente a un total de ${formatearMoneda(deudaTotalCalculada)}. Queremos invitarte a que te pongas al día mediante nuestra llave de pagos @3104439749 o te acerques para validar tu estado. Si ya cancelaste o tienes alguna duda, escríbenos con confianza 🥰. ¡Queremos seguir acompañándote en tus metas!`;
                     }
                 }
 
@@ -640,7 +610,7 @@
                     </div>
                 `;
             });
-            filtrarClientes(); // Ejecuta el filtro actual por si hay pestañas de estado activas
+            filtrarClientes();
         }
 
         function renderizarHistorial() {
