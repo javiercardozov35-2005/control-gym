@@ -14,7 +14,7 @@
         :root {
             --bg-color: #16161a;
             --card-bg: #242629;
-            --accent: #ff85a2; /* Rosa estético para cuidado facial */
+            --accent: #ff85a2; 
             --text: #fffffe;
             --text-dim: #94a1b2;
             --danger: #ff5252;
@@ -74,6 +74,7 @@
         
         .btn-compacto {
             padding: 6px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; border: none; width: auto; margin: 0; margin-left: 2px;
+            color: #000;
         }
         .c-wa { background: var(--success); color: white; text-decoration: none; display: inline-block; padding: 6px 10px; border-radius:6px; font-weight:bold; font-size:14px; }
         .c-historial { background: #9c27b0; color: white; }
@@ -125,7 +126,7 @@
             <div class="card">
                 <h3 id="form-titulo">Agendar Nueva Cita</h3>
                 <input type="text" id="nombre" placeholder="Nombre de la Paciente">
-                <input type="tel" id="telefono" placeholder="Celular (ej: 573001234567)">
+                <input type="tel" id="telefono" placeholder="Celular (Único)">
                 <input type="text" id="tratamiento" placeholder="Tratamiento (ej: Hydrafacial / Peeling)">
                 <input type="number" id="valor" placeholder="Valor Cobrado $">
                 
@@ -134,9 +135,15 @@
                     <option value="Efectivo">Efectivo</option>
                 </select>
                 
-                <div style="display: flex; gap: 5px;">
-                    <input type="date" id="fecha" style="flex:1;">
-                    <input type="text" id="hora" placeholder="Hora (ej: 4:30 PM)" style="flex:1;">
+                <div style="display: flex; gap: 5px; align-items: center;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 11px; color: var(--text-dim);">Fecha:</label>
+                        <input type="date" id="fecha">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 11px; color: var(--text-dim);">Hora:</label>
+                        <input type="time" id="hora">
+                    </div>
                 </div>
                 
                 <button id="btn-guardar" onclick="guardarCita()">Agendar y Registrar Pago</button>
@@ -149,7 +156,7 @@
                 
                 <div class="contenedor-filtros">
                     <button id="f-todos" class="btn-filtro act-todos" onclick="cambiarFiltro('todos')">Todos</button>
-                    <button id="f-alerta" class="btn-filtro" onclick="cambiarFiltro('alerta')">🔔 Toca Filtro (45d)</button>
+                    <button id="f-alerta" class="btn-filtro" onclick="cambiarFiltro('alerta')">🔔 Alerta (45d)</button>
                     <button id="f-proximas" class="btn-filtro" onclick="cambiarFiltro('proximas')">📅 Próximas</button>
                 </div>
 
@@ -159,7 +166,7 @@
 
         <!-- PESTAÑA HISTORIAL FINANZAS -->
         <div id="tab-historial" class="tab-content">
-            <div class="card">
+            <div class="card" style="border: 1px solid #333;">
                 <h3>📊 Cierre de Caja Facial</h3>
                 <div style="display: flex; gap: 5px; margin-bottom: 10px;">
                     <input type="date" id="f-desde" style="font-size:13px;">
@@ -233,6 +240,16 @@
             return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
         }
 
+        function formatearHora12(hora24) {
+            if(!hora24) return "";
+            let [h, m] = hora24.split(':');
+            h = parseInt(h);
+            let ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12;
+            h = h ? h : 12; 
+            return `${h}:${m} ${ampm}`;
+        }
+
         async function cargarDatos() {
             document.getElementById('status-cloud').innerText = "🔄 Sincronizando Consultorio...";
             try {
@@ -246,6 +263,7 @@
             } catch (e) { document.getElementById('status-cloud').innerText = "❌ Error de sincronización"; }
         }
 
+        // 🛡️ MOTOR DE VALIDACIÓN DE CRUCE DE HORARIOS (BLOQUE DE 2 HORAS)
         async function guardarCita() {
             const nombre = document.getElementById('nombre').value.trim();
             const telefono = document.getElementById('telefono').value.trim().replace(/\s+/g, '');
@@ -253,25 +271,61 @@
             const valor = document.getElementById('valor').value.trim() || "0";
             const metodo = document.getElementById('metodo').value;
             const fecha_cita = document.getElementById('fecha').value;
-            const hora_cita = document.getElementById('hora').value.trim();
+            const hora_cita = document.getElementById('hora').value.trim(); // Formato 'HH:MM' nativo
 
-            if (!nombre || !telefono || !fecha_cita || !tratamiento) { alert('Por favor llena los campos principales'); return; }
+            if (!nombre || !telefono || !fecha_cita || !hora_cita || !tratamiento) { 
+                alert('Por favor llena todos los campos principales (Nombre, Celular, Tratamiento, Fecha y Hora)'); 
+                return; 
+            }
+
+            // Convertir la nueva hora propuesta a minutos desde el inicio del día
+            const [nuevaH, nuevaM] = hora_cita.split(':').map(Number);
+            const nuevosMinutos = nuevaH * 60 + nuevaM;
+
+            // 🔍 VALIDACIÓN INTELIGENTE CON OTRAS CITAS DEL MISMO DÍA
+            let conflicto = false;
+            let pacienteConflicto = "";
+            let horaConflicto = "";
+
+            pacientes.forEach(p => {
+                // Solo nos interesan citas del mismo día y que no sean la misma que estamos editando
+                if (p.fecha_cita === fecha_cita && p.id !== editandoId) {
+                    const [exH, exM] = p.hora_cita.split(':').map(Number);
+                    const existentesMinutos = exH * 60 + exM;
+
+                    // Diferencia absoluta en minutos entre la nueva cita y la existente
+                    const diferenciaMinutos = Math.abs(nuevosMinutos - existentesMinutos);
+
+                    // Si la diferencia es menor a 120 minutos (2 horas), hay choque de agenda
+                    if (diferenciaMinutos < 120) {
+                        conflicto = true;
+                        pacienteConflicto = p.nombre;
+                        horaConflicto = formatearHora12(p.hora_cita);
+                    }
+                }
+            });
+
+            if (conflicto) {
+                alert(`⚠️ ERROR DE AGENDA:\nNo se puede agendar a esta hora porque se cruza con el bloque de 2 horas de la paciente "${pacienteConflicto}", quien tiene cita programada a las ${horaConflicto} el mismo día.`);
+                return;
+            }
+
+            document.getElementById('status-cloud').innerText = "🚀 Guardando en la nube...";
 
             try {
                 if(editandoId === null) {
-                    // Guardar cita
                     const { error } = await _supabase.from('pacientes_citas').insert([{ nombre, telefono, tratamiento, fecha_cita, hora_cita, valor_pagado: valor, metodo_pago: metodo }]);
                     if (error) throw error;
                     
-                    // Inyectar al Historial Contable inmediatamente
                     await _supabase.from('historial_facial').insert([{
                         nombre, fecha_pago: fecha_cita,
-                        concepto: `✨ CITA AGENDADA: [Monto: ${valor}] (${metodo}) - Tratamiento: ${tratamiento} a las ${hora_cita}`
+                        concepto: `✨ CITA AGENDADA: [Monto: ${valor}] (${metodo}) - Tratamiento: ${tratamiento} a las ${formatearHora12(hora_cita)}`
                     }]);
-                    alert('¡Cita agendada y pago registrado!');
+                    alert('¡Cita agendada sin cruces y pago registrado!');
                 } else {
                     const { error } = await _supabase.from('pacientes_citas').update({ nombre, telefono, tratamiento, fecha_cita, hora_cita, valor_pagado: valor, metodo_pago: metodo }).eq('id', editandoId);
                     if (error) throw error;
+                    alert('¡Cita modificada con éxito!');
                     cancelarEdicion();
                 }
                 document.getElementById('nombre').value = '';
@@ -283,7 +337,7 @@
             } catch (e) { alert("Error: " + e.message); }
         }
 
-        function iniciarEdicion(index) {
+        function SkinnerEdicion(index) {
             const p = pacientes[index]; editandoId = p.id;
             document.getElementById('nombre').value = p.nombre;
             document.getElementById('telefono').value = p.telefono;
@@ -329,8 +383,8 @@
 
                 let cumpleFiltro = false;
                 if (filtroActual === 'todos') cumpleFiltro = true;
-                else if (filtroActual === 'alerta' && diasPasados >= 45) cumpleFiltro = true; // Alerta de 45 días cumplidos
-                else if (filtroActual === 'proximas' && diasPasados < 0) cumpleFiltro = true; // Citas hacia adelante
+                else if (filtroActual === 'alerta' && diasPasados >= 45) cumpleFiltro = true;
+                else if (filtroActual === 'proximas' && diasPasados < 0) cumpleFiltro = true;
 
                 let cumpleTexto = nombre.includes(txt) || cel.includes(txt);
                 if (cumpleFiltro && cumpleTexto) items[i].style.display = 'flex';
@@ -350,11 +404,12 @@
                 const diasPasados = Math.floor(diff / (1000 * 60 * 60 * 24));
 
                 let estadoTexto = ""; let claseColor = "ok"; let msgWa = "";
+                const horaLegible = formatearHora12(p.hora_cita);
 
                 if (diasPasados < 0) {
-                    estadoTexto = `📅 Cita programada el ${p.fecha_cita} a las ${p.hora_cita}`;
+                    estadoTexto = `📅 Cita programada el ${p.fecha_cita} a las ${horaLegible}`;
                     claseColor = "info";
-                    msgWa = `Hola ${p.nombre}✨, te escribo de parte de Majo Cardozo Cuidado Facial para confirmarte tu cita de ${p.tratamiento} programada para el día ${p.fecha_cita} a las ${p.hora_cita}. ¡Te esperamos para consentir tu piel! 🥰🌸`;
+                    msgWa = `Hola ${p.nombre}✨, te escribo de parte de Majo Cardozo Cuidado Facial para confirmarte tu cita de ${p.tratamiento} programada para el día ${p.fecha_cita} a las ${horaLegible}. ¡Te esperamos para consentir tu piel! 🥰🌸`;
                 } else if (diasPasados >= 45) {
                     estadoTexto = `🔔 ALERTA: Hace ${diasPasados} días de su última sesión`;
                     claseColor = "vencer";
@@ -378,7 +433,7 @@
                         <div>
                             <a href="${urlWa}" class="c-wa" target="_blank">📱</a>
                             <button class="btn-compacto c-historial" onclick="verHistorialPaciente('${p.nombre}')">🔍</button>
-                            <button class="btn-compacto c-editar" onclick="iniciarEdicion(${index})">✏️</button>
+                            <button class="btn-compacto c-editar" onclick="SkinnerEdicion(${index})">✏️</button>
                         </div>
                     </div>
                 `;
