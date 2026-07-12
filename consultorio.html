@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Majo Cardozo | Cuidado Facial</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #16161a;
+            --card-bg: #242629;
+            --accent: #ff85a2; /* Rosa estético para cuidado facial */
+            --text: #fffffe;
+            --text-dim: #94a1b2;
+            --danger: #ff5252;
+            --warning: #ffb300;
+            --info: #00b0ff;
+            --success: #25d366;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            padding-top: 40px;
+            padding-bottom: 80px;
+        }
+        h2, h3 { margin-bottom: 15px; color: var(--text); }
+        .card {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        input, button, select {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: none;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        input, select { background: #16161a; color: #fff; border: 1px solid #444; }
+        button { background: var(--accent); color: #16161a; font-weight: bold; cursor: pointer; }
+        
+        .contenedor-filtros {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        .btn-filtro {
+            padding: 8px 2px; font-size: 11px; border-radius: 6px; font-weight: bold; margin: 0; text-align: center; background: #333; color: #fff;
+        }
+        .btn-filtro.act-todos { background: #fff; color: #000; }
+        .btn-filtro.act-alerta { background: var(--warning); color: #000; }
+        .btn-filtro.act-proximas { background: var(--info); color: #fff; }
+
+        .paciente-item {
+            border-bottom: 1px solid #333;
+            padding: 14px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .btn-compacto {
+            padding: 6px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; border: none; width: auto; margin: 0; margin-left: 2px;
+        }
+        .c-wa { background: var(--success); color: white; text-decoration: none; display: inline-block; padding: 6px 10px; border-radius:6px; font-weight:bold; font-size:14px; }
+        .c-historial { background: #9c27b0; color: white; }
+        .c-editar { background: #fff; color: #000; }
+
+        #status-cloud { text-align: center; font-size: 12px; color: var(--accent); margin-bottom: 10px; }
+        #pantalla-bloqueo {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-color); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-bar {
+            position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background: #0f0f12; border-top: 1px solid #2d2d2d;
+            display: flex; justify-content: space-around; align-items: center; z-index: 999;
+        }
+        .tab-button {
+            background: none; color: var(--text-dim); border: none; font-size: 12px; display: flex; flex-direction: column; align-items: center; width: auto; margin:0;
+        }
+        .tab-button.active { color: var(--accent); font-weight: bold; }
+        .search-box { background: #16161a; border-radius: 10px; padding: 10px; margin-bottom: 10px; border: 1px solid #444; }
+        .historial-item { border-bottom: 1px solid #2d2d2d; padding: 10px 0; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <!-- ACCESO -->
+    <div id="pantalla-bloqueo">
+        <h2>✨ Majo Cardozo</h2>
+        <p style="color: var(--text-dim); margin-bottom: 20px;">Control de Pacientes e Ingresos</p>
+        <input type="password" id="pass-input" placeholder="Contraseña de acceso" style="text-align: center; max-width: 300px;">
+        <button onclick="verificarAcceso()" style="max-width: 300px; margin-top: 15px;">Ingresar al Consultorio</button>
+        <p id="error-msg" style="color: var(--danger); margin-top: 10px; display: none;">❌ Contraseña incorrecta</p>
+    </div>
+
+    <!-- CONTENIDO -->
+    <div id="contenido-app">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>🌸 Majo Cardozo Facial</h3>
+            <div style="display: flex; gap: 5px;">
+                <button onclick="cargarDatos()" style="width: auto; padding: 6px 12px; font-size: 11px; background: #333; color: #fff;">🔄 Sincronizar</button>
+                <button onclick="cerrarSesion()" style="width: auto; padding: 6px 12px; font-size: 11px; background: var(--danger); color: #fff;">🔒 Salir</button>
+            </div>
+        </div>
+        <div id="status-cloud">Conectando...</div>
+
+        <!-- PESTAÑA PACIENTES -->
+        <div id="tab-pacientes" class="tab-content active">
+            <div class="card">
+                <h3 id="form-titulo">Agendar Nueva Cita</h3>
+                <input type="text" id="nombre" placeholder="Nombre de la Paciente">
+                <input type="tel" id="telefono" placeholder="Celular (ej: 573001234567)">
+                <input type="text" id="tratamiento" placeholder="Tratamiento (ej: Hydrafacial / Peeling)">
+                <input type="number" id="valor" placeholder="Valor Cobrado $">
+                
+                <select id="metodo">
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Efectivo">Efectivo</option>
+                </select>
+                
+                <div style="display: flex; gap: 5px;">
+                    <input type="date" id="fecha" style="flex:1;">
+                    <input type="text" id="hora" placeholder="Hora (ej: 4:30 PM)" style="flex:1;">
+                </div>
+                
+                <button id="btn-guardar" onclick="guardarCita()">Agendar y Registrar Pago</button>
+                <button id="btn-cancelar" onclick="cancelarEdicion()" style="background:#555; color:#fff; display:none; margin-top: 5px;">Cancelar Edición</button>
+            </div>
+
+            <div class="card">
+                <h3>Buscador y Alertas (45 días)</h3>
+                <input type="text" id="buscador" class="search-box" placeholder="🔍 Buscar por nombre o celular..." onkeyup="filtrarPacientes()">
+                
+                <div class="contenedor-filtros">
+                    <button id="f-todos" class="btn-filtro act-todos" onclick="cambiarFiltro('todos')">Todos</button>
+                    <button id="f-alerta" class="btn-filtro" onclick="cambiarFiltro('alerta')">🔔 Toca Filtro (45d)</button>
+                    <button id="f-proximas" class="btn-filtro" onclick="cambiarFiltro('proximas')">📅 Próximas</button>
+                </div>
+
+                <div id="listaPacientes"></div>
+            </div>
+        </div>
+
+        <!-- PESTAÑA HISTORIAL FINANZAS -->
+        <div id="tab-historial" class="tab-content">
+            <div class="card">
+                <h3>📊 Cierre de Caja Facial</h3>
+                <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                    <input type="date" id="f-desde" style="font-size:13px;">
+                    <input type="date" id="f-hasta" style="font-size:13px;">
+                </div>
+                <button onclick="calcularFinanzas()" style="background: var(--info); color: #fff;">📊 Calcular Ingresos</button>
+                <div id="reporte-financiero" style="margin-top: 12px; font-size: 14px;"></div>
+                <div style="max-height: 150px; margin-top: 15px;"><canvas id="graficaFacial"></canvas></div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 id="titulo-historial">📜 Historial de Tratamientos</h3>
+                    <button id="btn-ver-todos" onclick="verHistorialGlobal()" style="display:none; width:auto; padding:4px 10px; font-size:11px; background:#444; color:#fff;">Ver Todos</button>
+                </div>
+                <div id="listaHistorial"></div>
+            </div>
+        </div>
+
+        <!-- BARRA INFERIOR -->
+        <div class="tab-bar">
+            <button class="tab-button active" onclick="cambiarPestaña('tab-pacientes', this)">🌸 Pacientes</button>
+            <button class="tab-button" onclick="cambiarPestaña('tab-historial', this)">📜 Finanzas</button>
+        </div>
+    </div>
+
+    <script>
+        const CLAVE = "1876";
+        const SUPABASE_URL = "https://hvinbsrtwllpdppgxdpw.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_aLuAKNoFHcKZvb9jq2mAXw_8Ioa-vQJ";
+        
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let pacientes = []; let historial = []; let editandoId = null; let filtroActual = 'todos'; let miGrafica = null;
+
+        if (sessionStorage.getItem('auth_facial') === 'true') { mostrarApp(); }
+
+        function verificarAcceso() {
+            if (document.getElementById('pass-input').value === CLAVE) {
+                sessionStorage.setItem('auth_facial', 'true'); mostrarApp();
+            } else {
+                document.getElementById('error-msg').style.display = 'block';
+                document.getElementById('pass-input').value = '';
+            }
+        }
+        function mostrarApp() {
+            document.getElementById('pantalla-bloqueo').style.display = 'none';
+            document.getElementById('contenido-app').style.display = 'block';
+            document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+            establecerFechasFiltro();
+            cargarDatos();
+        }
+        function cerrarSesion() { sessionStorage.removeItem('auth_facial'); window.location.reload(); }
+        
+        function cambiarPestaña(tabId, boton) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            boton.classList.add('active');
+            if(tabId === 'tab-historial') { calcularFinanzas(); }
+        }
+
+        function establecerFechasFiltro() {
+            const hoy = new Date();
+            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+            const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
+            document.getElementById('f-desde').value = `${hoy.getFullYear()}-${mes}-01`;
+            document.getElementById('f-hasta').value = `${hoy.getFullYear()}-${mes}-${ultimoDia}`;
+        }
+
+        function formatearMoneda(val) {
+            return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
+        }
+
+        async function cargarDatos() {
+            document.getElementById('status-cloud').innerText = "🔄 Sincronizando Consultorio...";
+            try {
+                const rPacientes = await _supabase.from('pacientes_citas').select('*').order('fecha_cita', { ascending: false });
+                pacientes = rPacientes.data || [];
+                const rHistorial = await _supabase.from('historial_facial').select('*').order('id', { ascending: false });
+                historial = rHistorial.data || [];
+                document.getElementById('status-cloud').innerText = "✅ Consultorio Majo Cardozo Online";
+                renderizarPacientes();
+                renderizarHistorial();
+            } catch (e) { document.getElementById('status-cloud').innerText = "❌ Error de sincronización"; }
+        }
+
+        async function guardarCita() {
+            const nombre = document.getElementById('nombre').value.trim();
+            const telefono = document.getElementById('telefono').value.trim().replace(/\s+/g, '');
+            const tratamiento = document.getElementById('tratamiento').value.trim();
+            const valor = document.getElementById('valor').value.trim() || "0";
+            const metodo = document.getElementById('metodo').value;
+            const fecha_cita = document.getElementById('fecha').value;
+            const hora_cita = document.getElementById('hora').value.trim();
+
+            if (!nombre || !telefono || !fecha_cita || !tratamiento) { alert('Por favor llena los campos principales'); return; }
+
+            try {
+                if(editandoId === null) {
+                    // Guardar cita
+                    const { error } = await _supabase.from('pacientes_citas').insert([{ nombre, telefono, tratamiento, fecha_cita, hora_cita, valor_pagaged: valor, valor_pagado: valor, metodo_pago: metodo }]);
+                    if (error) throw error;
+                    
+                    // Inyectar al Historial Contable inmediatamente
+                    await _supabase.from('historial_facial').insert([{
+                        nombre, fecha_pago: fecha_cita,
+                        concepto: `✨ CITA AGENDADA: [Monto: ${valor}] (${metodo}) - Tratamiento: ${tratamiento} a las ${hora_cita}`
+                    }]);
+                    alert('¡Cita agendada y pago registrado!');
+                } else {
+                    const { error } = await _supabase.from('pacientes_citas').update({ nombre, telefono, tratamiento, fecha_cita, hora_cita, valor_pagado: valor, metodo_pago: metodo }).eq('id', editandoId);
+                    if (error) throw error;
+                    cancelarEdicion();
+                }
+                document.getElementById('nombre').value = '';
+                document.getElementById('telefono').value = '';
+                document.getElementById('tratamiento').value = '';
+                document.getElementById('valor').value = '';
+                document.getElementById('hora').value = '';
+                cargarDatos();
+            } catch (e) { alert("Error: " + e.message); }
+        }
+
+        function iniciarEdicion(index) {
+            const p = pacientes[index]; editandoId = p.id;
+            document.getElementById('nombre').value = p.nombre;
+            document.getElementById('telefono').value = p.telefono;
+            document.getElementById('tratamiento').value = p.tratamiento;
+            document.getElementById('valor').value = p.valor_pagado;
+            document.getElementById('metodo').value = p.metodo_pago;
+            document.getElementById('fecha').value = p.fecha_cita;
+            document.getElementById('hora').value = p.hora_cita;
+            document.getElementById('form-titulo').innerText = "✏️ Modificar Cita de: " + p.nombre;
+            document.getElementById('btn-cancelar').style.display = "block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEdicion() {
+            editandoId = null; document.getElementById('nombre').value = ''; document.getElementById('telefono').value = '';
+            document.getElementById('tratamiento').value = ''; document.getElementById('valor').value = ''; document.getElementById('hora').value = '';
+            document.getElementById('form-titulo').innerText = "Agendar Nueva Cita";
+            document.getElementById('btn-cancelar').style.display = "none";
+        }
+
+        function cambiarFiltro(estado) {
+            filtroActual = estado;
+            document.querySelectorAll('.btn-filtro').forEach(b => b.className = 'btn-filtro');
+            if(estado === 'todos') document.getElementById('f-todos').classList.add('act-todos');
+            if(estado === 'alerta') document.getElementById('f-alerta').classList.add('act-alerta');
+            if(estado === 'proximas') document.getElementById('f-proximas').classList.add('act-proximas');
+            filtrarPacientes();
+        }
+
+        function filtrarPacientes() {
+            const txt = document.getElementById('buscador').value.toLowerCase();
+            const items = document.getElementsByClassName('paciente-item');
+            const hoyMs = new Date().setHours(0,0,0,0);
+
+            for (let i = 0; i < items.length; i++) {
+                const nombre = items[i].getAttribute('data-nombre').toLowerCase();
+                const cel = items[i].getAttribute('data-celular');
+                const fechaStr = items[i].getAttribute('data-fecha');
+                
+                const fCita = new Date(fechaStr + 'T00:00:00');
+                const diff = hoyMs - fCita;
+                const diasPasados = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+                let cumpleFiltro = false;
+                if (filtroActual === 'todos') cumpleFiltro = true;
+                else if (filtroActual === 'alerta' && diasPasados >= 45) cumpleFiltro = true; // Alerta de 45 días cumplidos
+                else if (filtroActual === 'proximas' && diasPasados < 0) cumpleFiltro = true; // Citas hacia adelante
+
+                let cumpleTexto = nombre.includes(txt) || cel.includes(txt);
+                if (cumpleFiltro && cumpleTexto) items[i].style.display = 'flex';
+                else items[i].style.display = 'none';
+            }
+        }
+
+        function renderizarPacientes() {
+            const contenedor = document.getElementById('listaPacientes'); contenedor.innerHTML = '';
+            if (pacientes.length === 0) { contenedor.innerHTML = '<p style="color:var(--text-dim)">No hay pacientes programadas.</p>'; return; }
+
+            const hoyMs = new Date().setHours(0,0,0,0);
+
+            pacientes.forEach((p, index) => {
+                const fCita = new Date(p.fecha_cita + 'T00:00:00');
+                const diff = hoyMs - fCita;
+                const diasPasados = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+                let estadoTexto = ""; let claseColor = "ok"; let msgWa = "";
+
+                if (diasPasados < 0) {
+                    estadoTexto = `📅 Cita programada el ${p.fecha_cita} a las ${p.hora_cita}`;
+                    claseColor = "info";
+                    msgWa = `Hola ${p.nombre}✨, te escribo de parte de Majo Cardozo Cuidado Facial para confirmarte tu cita de ${p.tratamiento} programada para el día ${p.fecha_cita} a las ${p.hora_cita}. ¡Te esperamos para consentir tu piel! 🥰🌸`;
+                } else if (diasPasados >= 45) {
+                    estadoTexto = `🔔 ALERTA: Hace ${diasPasados} días de su última sesión`;
+                    claseColor = "vencer";
+                    msgWa = `Hola ${p.nombre}🥰, ¡espero que estés súper bien! Te escribe Majo Cardozo. Te cuento que revisando mi agenda vi que ya pasaron ${diasPasados} días desde tu último tratamiento facial y es el momento ideal para realizarte un mantenimiento y mantener tu piel radiante. ✨🌸 ¿Te gustaría que te separe un espacio para esta semana? Escríbeme con confianza...`;
+                } else {
+                    estadoTexto = `✨ Piel radiante (Sesión hace ${diasPasados} días)`;
+                    claseColor = "ok";
+                    msgWa = `Hola ${p.nombre}🌸, ¡espero que ames los resultados de tu sesión de ${p.tratamiento}! Recuerda cuidar tu piel diariamente. ¡Nos vemos pronto! 🥰`;
+                }
+
+                const msgEncoded = encodeURIComponent(msgWa);
+                const urlWa = `https://wa.me/${p.telefono}?text=${msgEncoded}`;
+
+                contenedor.innerHTML += `
+                    <div class="paciente-item" data-nombre="${p.nombre}" data-celular="${p.telefono}" data-fecha="${p.fecha_cita}">
+                        <div style="max-width: 55%;">
+                            <strong>${p.nombre}</strong><br>
+                            <span style="font-size:12px; color:var(--text-dim)">${p.tratamiento} (${formatearMoneda(p.valor_pagado)})</span><br>
+                            <span style="font-size:11px;" class="${claseColor}">${estadoTexto}</span>
+                        </div>
+                        <div>
+                            <a href="${urlWa}" class="c-wa" target="_blank">📱</a>
+                            <button class="btn-compacto c-historial" onclick="verHistorialPaciente('${p.nombre}')">🔍</button>
+                            <button class="btn-compacto c-editar" onclick="iniciarEdicion(${index})">✏️</button>
+                        </div>
+                    </div>
+                `;
+            });
+            filtrarPacientes();
+        }
+
+        function verHistorialPaciente(nom) {
+            cambiarPestaña('tab-historial', document.querySelectorAll('.tab-button')[1]);
+            document.getElementById('titulo-historial').innerText = `📜 Sesiones de: ${nom}`;
+            document.getElementById('btn-ver-todos').style.display = "block";
+            const contenedor = document.getElementById('listaHistorial'); contenedor.innerHTML = '';
+            const filtrados = historial.filter(h => h.nombre.toLowerCase() === nom.toLowerCase());
+            if(filtrados.length===0){ contenedor.innerHTML = '<p>Sin registros.</p>'; return;}
+            filtrados.forEach(h => {
+                contenedor.innerHTML += `<div class="historial-item"><b>📅 ${h.fecha_pago}</b><br>${h.concepto}</div>`;
+            });
+        }
+
+        function verHistorialGlobal() {
+            document.getElementById('titulo-historial').innerText = "📜 Historial de Tratamientos";
+            document.getElementById('btn-ver-todos').style.display = "none";
+            renderizarHistorial();
+        }
+
+        function calcularFinanzas() {
+            const desde = document.getElementById('f-desde').value;
+            const hasta = document.getElementById('f-hasta').value;
+            if(!desde || !hasta) return;
+
+            let total = 0; let trans = 0; let efec = 0;
+            historial.forEach(h => {
+                if(h.fecha_pago >= desde && h.fecha_pago <= hasta) {
+                    const match = h.concepto.match(/\[Monto:\s*(\d+)\]/);
+                    if(match) {
+                        const m = parseInt(match[1]) || 0; total += m;
+                        if(h.concepto.includes("(Efectivo)")) efec += m; else trans += m;
+                    }
+                }
+            });
+
+            document.getElementById('reporte-financiero').innerHTML = `
+                <div style="background:#16161a; padding:10px; border-radius:8px; border-left:4px solid var(--accent); margin-top:5px;">
+                    <span style="font-size:15px;">💰 Producción: <b>${formatearMoneda(total)}</b></span><br>
+                    <span style="color:#00b0ff; font-size:12px;">💳 Transferencias: ${formatearMoneda(trans)}</span> | 
+                    <span style="color:#ffb300; font-size:12px;">💵 Efectivo: ${formatearMoneda(efec)}</span>
+                </div>
+            `;
+
+            if(miGrafica) miGrafica.destroy();
+            const ctx = document.getElementById('graficaFacial').getContext('2d');
+            miGrafica = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: ['Transferencia', 'Efectivo'], datasets: [{ data: [trans, efec], backgroundColor: ['#00b0ff', '#ffb300'], borderWidth:0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff', font: { size:11 } } } } }
+            });
+        }
+
+        function renderizarHistorial() {
+            const contenedor = document.getElementById('listaHistorial'); contenedor.innerHTML = '';
+            if (historial.length === 0) { contenedor.innerHTML = '<p style="color:var(--text-dim)">Sin movimientos en la nube.</p>'; return; }
+            historial.forEach(h => {
+                contenedor.innerHTML += `<div class="historial-item"><b>📅 ${h.fecha_pago}</b> - ${h.nombre}<br><span style="color:var(--text-dim); font-size:13px;">${h.concepto}</span></div>`;
+            });
+        }
+    </script>
+</body>
+</html>
