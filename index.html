@@ -328,11 +328,14 @@
 
         function establecerFechasFiltroDefecto() {
             const hoy = new Date();
-            const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-            const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+            const anio = hoy.getFullYear();
+            const mes = String(hoy.getMonth() + 1).padStart(2, '0'); // Ajusta el mes actual correctamente
             
-            document.getElementById('filtro-desde').value = primerDia.toISOString().split('T')[0];
-            document.getElementById('filtro-hasta').value = ultimoDia.toISOString().split('T')[0];
+            // Obtener el último día del mes actual de forma exacta
+            const ultimoDiaMes = new Date(anio, hoy.getMonth() + 1, 0).getDate();
+            
+            document.getElementById('filtro-desde').value = `${anio}-${mes}-01`;
+            document.getElementById('filtro-hasta').value = `${anio}-${mes}-${String(ultimoDiaMes).padStart(2, '0')}`;
         }
 
         function formatearMoneda(valor) {
