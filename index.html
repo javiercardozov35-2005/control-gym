@@ -218,16 +218,15 @@
     <script>
         const CLAVE_ACCESO = "1876"; 
         
-        // 🔑 REEMPLAZA ESTAS DOS LÍNEAS CON TUS DATOS REALES DE SUPABASE (Paso 3)
+        // 🔑 REEMPLAZA ESTAS DOS LÍNEAS CON TUS DATOS DE TU PANEL DE SUPABASE (PUBLISHABLE KEY)
         const SUPABASE_URL = "https://hvinbsrtwllpdppgxdpw.supabase.co/rest/v1/";
         const SUPABASE_ANON_KEY = "sb_publishable_aLuAKNoFHcKZvb9jq2mAXw_8Ioa-vQJ";
 
-        // Inicializar el cliente de Supabase
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let clientes = [];
         let historialPagos = [];
-        let editandoId = null; // Guardamos el ID real de la base de datos
+        let editandoId = null;
 
         if (sessionStorage.getItem('auth_gym_nube') === 'true') {
             mostrarApp();
@@ -270,16 +269,13 @@
             document.getElementById('fechaVence').value = hoy.toISOString().split('T')[0];
         }
 
-        // DESCARGAR DATOS DESDE SUPABASE REAL CLOUD
         async function cargarDatosDesdeNube() {
             document.getElementById('status-cloud').innerText = "🔄 Sincronizando con Supabase Central...";
             try {
-                // 1. Cargar Clientas
                 const resClientes = await _supabase.from('clientes').select('*').order('nombre', { ascending: true });
                 if (resClientes.error) throw resClientes.error;
                 clientes = resClientes.data || [];
 
-                // 2. Cargar Historial
                 const resHistorial = await _supabase.from('historial').select('*').order('created_at', { ascending: false });
                 if (resHistorial.error) throw resHistorial.error;
                 historialPagos = resHistorial.data || [];
@@ -293,7 +289,6 @@
             }
         }
 
-        // GUARDAR O EDITAR EN SUPABASE
         async function guardarCliente() {
             const nombreInput = document.getElementById('nombre');
             const telefonoInput = document.getElementById('telefono');
@@ -312,7 +307,6 @@
 
             try {
                 if (editandoId === null) {
-                    // CLIENTA NUEVA
                     const { error } = await _supabase.from('clientes').insert([{ nombre, telefono, fechaVence }]);
                     if (error) throw error;
 
@@ -321,7 +315,6 @@
                     
                     alert('¡Clienta registrada permanentemente en la nube!');
                 } else {
-                    // EDITAR EXISTENTE
                     const { error } = await _supabase.from('clientes').update({ nombre, telefono, fechaVence }).eq('id', editandoId);
                     if (error) throw error;
 
@@ -335,7 +328,7 @@
                 nombreInput.value = '';
                 telefonoInput.value = '';
                 establecerFechaDefecto();
-                cargarDatosDesdeNube(); // Recarga la pantalla con los datos reales de internet
+                cargarDatosDesdeNube();
             } catch (error) {
                 alert("Error al guardar en la base de datos: " + error.message);
             }
@@ -343,7 +336,7 @@
 
         function iniciarEdicion(index) {
             const cliente = clientes[index];
-            editandoId = cliente.id; // Guardamos el identificador numérico/uuid real
+            editandoId = cliente.id;
 
             document.getElementById('nombre').value = cliente.nombre;
             document.getElementById('telefono').value = cliente.telefono;
@@ -367,7 +360,6 @@
             document.getElementById('btn-cancelar').style.display = "none";
         }
 
-        // RENOVAR MENSUALIDAD DIRECTO EN LA NUBE
         async function renovarMembresia(index) {
             const cliente = clientes[index];
             const nuevaFecha = new Date();
@@ -377,11 +369,9 @@
             document.getElementById('status-cloud').innerText = "⏳ Procesando renovación...";
 
             try {
-                // Actualizar en Supabase
                 const { error } = await _supabase.from('clientes').update({ fechaVence: nuevaFechaStr }).eq('id', cliente.id);
                 if (error) throw error;
 
-                // Añadir al Historial en Supabase
                 const fechaHoy = new Date().toISOString().split('T')[0];
                 await _supabase.from('historial').insert([{
                     nombre: cliente.nombre,
@@ -428,17 +418,32 @@
 
                 let claseEstado = "ok";
                 let textoEstado = `${diasRestantes} días restantes`;
-
-                if (diasRestantes <= 0) {
+                
+                // Construcción de Mensaje Inteligente según la deuda de la clienta
+                let plantillaMensaje = "";
+                
+                if (diasRestantes > 0) {
+                    // AL DÍA: Recordatorio preventivo normal
+                    claseEstado = "ok";
+                    plantillaMensaje = `Hola ${c.nombre}, Apreciamos mucho que seas parte de esta familia QUEENFIT, te escribimos brevemente para recordarte que tu mensualidad de entreno vence el ${c.fechaVence}. Sabemos que el dia a dia es una locura y a veces nos pasa no te preocupes🥰, puedes realizar tus pagos en la llave @3104439749 cualquier duda que tengas estamos a un mensaje de distacia!!! Si ya pagaste omite el mensaje... ¡Te esperamos para seguir entrenando!`;
+                } else {
                     claseEstado = "vencer";
-                    textoEstado = "Vencido";
-                } else if (diasRestantes <= 3) {
-                    claseEstado = "vencer";
-                    textoEstado = `¡Vence en ${diasRestantes} días!`;
+                    const diasVencidos = Math.abs(diasRestantes);
+                    
+                    if (diasVencidos <= 30) {
+                        // VENCIDO RECIENTE (Menos de un mes de retraso)
+                        textoEstado = `Vencido hace ${diasVencidos} días`;
+                        plantillaMensaje = `Hola ${c.nombre}, esperamos que estés muy bien. Te escribimos de parte de la familia QUEENFIT para recordarte que tu mensualidad de entreno ya se encuentra vencida desde el pasado ${c.fechaVence} (hace ${diasVencidos} días). Te invitamos a ponerte al día en la llave @3104439749 para continuar con toda la energía en tus entrenamientos. Si ya realizaste tu pago, por favor omite este mensaje 🥰. ¡Te esperamos en la sala!`;
+                    } else {
+                        // DEUDA DE VARIOS MESES (Más de 30 días de retraso)
+                        const mesesDeuda = Math.floor(diasVencidos / 30);
+                        textoEstado = `⚠️ Debe ${mesesDeuda} meses (${diasVencidos} días)`;
+                        plantillaMensaje = `Hola ${c.nombre}, de parte de la familia QUEENFIT nos comunicamos contigo porque registramos en el sistema que tu membresía venció desde el pasado ${c.fechaVence} y presentas un saldo pendiente acumulado de aproximadamente ${mesesDeuda} meses de entreno. Queremos invitarte a que te pongas al día mediante nuestra llave de pagos @3104439749 o te acerques para validar tu estado. Si ya cancelaste o tienes alguna duda, escríbenos con confianza 🥰. ¡Queremos seguir acompañándote en tus metas!`;
+                    }
                 }
 
-                const mensaje = encodeURIComponent(`Hola ${c.nombre}, Apreciamos mucho que seas parte de esta familia QUEENFIT, te escribimos brevemente para recordarte que tu mensualidad de entreno vence el ${c.fechaVence}. Sabemos que el dia a dia es una locura y a veces nos pasa no te preocupes🥰, puedes realizar tus pagos en la llave @3104439749 cualquier duda que tengas estamos a un mensaje de distacia!!! Si ya pagaste omite el mensaje... ¡Te esperamos para seguir entrenando!`);
-                const urlWa = `https://wa.me/${c.telefono}?text=${mensaje}`;
+                const mensajeEncoded = encodeURIComponent(plantillaMensaje);
+                const urlWa = `https://wa.me/${c.telefono}?text=${mensajeEncoded}`;
 
                 contenedor.innerHTML += `
                     <div class="cliente-item" data-nombre="${c.nombre}">
