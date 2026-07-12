@@ -79,6 +79,7 @@
         .c-wa { background: var(--success); color: white; text-decoration: none; display: inline-block; padding: 6px 10px; border-radius:6px; font-weight:bold; font-size:14px; }
         .c-historial { background: #9c27b0; color: white; }
         .c-editar { background: #fff; color: #000; }
+        .c-eliminar { background: var(--danger); color: white; }
 
         #status-cloud { text-align: center; font-size: 12px; color: var(--accent); margin-bottom: 10px; }
         #pantalla-bloqueo {
@@ -263,7 +264,6 @@
             } catch (e) { document.getElementById('status-cloud').innerText = "❌ Error de sincronización"; }
         }
 
-        // 🛡️ MOTOR DE VALIDACIÓN DE CRUCE DE HORARIOS (BLOQUE DE 2 HORAS)
         async function guardarCita() {
             const nombre = document.getElementById('nombre').value.trim();
             const telefono = document.getElementById('telefono').value.trim().replace(/\s+/g, '');
@@ -271,32 +271,26 @@
             const valor = document.getElementById('valor').value.trim() || "0";
             const metodo = document.getElementById('metodo').value;
             const fecha_cita = document.getElementById('fecha').value;
-            const hora_cita = document.getElementById('hora').value.trim(); // Formato 'HH:MM' nativo
+            const hora_cita = document.getElementById('hora').value.trim();
 
             if (!nombre || !telefono || !fecha_cita || !hora_cita || !tratamiento) { 
                 alert('Por favor llena todos los campos principales (Nombre, Celular, Tratamiento, Fecha y Hora)'); 
                 return; 
             }
 
-            // Convertir la nueva hora propuesta a minutos desde el inicio del día
             const [nuevaH, nuevaM] = hora_cita.split(':').map(Number);
             const nuevosMinutos = nuevaH * 60 + nuevaM;
 
-            // 🔍 VALIDACIÓN INTELIGENTE CON OTRAS CITAS DEL MISMO DÍA
             let conflicto = false;
             let pacienteConflicto = "";
             let horaConflicto = "";
 
             pacientes.forEach(p => {
-                // Solo nos interesan citas del mismo día y que no sean la misma que estamos editando
                 if (p.fecha_cita === fecha_cita && p.id !== editandoId) {
                     const [exH, exM] = p.hora_cita.split(':').map(Number);
                     const existentesMinutos = exH * 60 + exM;
-
-                    // Diferencia absoluta en minutos entre la nueva cita y la existente
                     const diferenciaMinutos = Math.abs(nuevosMinutos - existentesMinutos);
 
-                    // Si la diferencia es menor a 120 minutos (2 horas), hay choque de agenda
                     if (diferenciaMinutos < 120) {
                         conflicto = true;
                         pacienteConflicto = p.nombre;
@@ -306,7 +300,7 @@
             });
 
             if (conflicto) {
-                alert(`⚠️ ERROR DE AGENDA:\nNo se puede agendar a esta hora porque se cruza con el bloque de 2 horas de la paciente "${pacienteConflicto}", quien tiene cita programada a las ${horaConflicto} el mismo día.`);
+                alert(`⚠️ ERROR DE AGENDA:\nNo se puede agendar porque se cruza con el bloque de 2 horas de "${pacienteConflicto}" (${horaConflicto}).`);
                 return;
             }
 
@@ -321,7 +315,7 @@
                         nombre, fecha_pago: fecha_cita,
                         concepto: `✨ CITA AGENDADA: [Monto: ${valor}] (${metodo}) - Tratamiento: ${tratamiento} a las ${formatearHora12(hora_cita)}`
                     }]);
-                    alert('¡Cita agendada sin cruces y pago registrado!');
+                    alert('¡Cita agendada y pago registrado!');
                 } else {
                     const { error } = await _supabase.from('pacientes_citas').update({ nombre, telefono, tratamiento, fecha_cita, hora_cita, valor_pagado: valor, metodo_pago: metodo }).eq('id', editandoId);
                     if (error) throw error;
@@ -335,6 +329,31 @@
                 document.getElementById('hora').value = '';
                 cargarDatos();
             } catch (e) { alert("Error: " + e.message); }
+        }
+
+        // 🗑️ FUNCIÓN PARA LIBERAR ESPACIO DE CITAS CANCELADAS
+        async function eliminarCita(idCita, nombrePaciente, fechaCita, horaCita) {
+            const confirmacion = confirm(`❌ ¿Estás segura de que deseas CANCELAR la cita de ${nombrePaciente} el día ${fechaCita}?\nEsto liberará el bloque de 2 horas inmediatamente.`);
+            if (!confirmacion) return;
+
+            document.getElementById('status-cloud').innerText = "⏳ Liberando espacio en la agenda...";
+
+            try {
+                const { error } = await _supabase.from('pacientes_citas').delete().eq('id', idCita);
+                if (error) throw error;
+
+                const fechaHoy = new Date().toISOString().split('T')[0];
+                await _supabase.from('historial_facial').insert([{
+                    nombre: nombrePaciente,
+                    fecha_pago: fechaHoy,
+                    concepto: `❌ CITA CANCELADA: Espacio liberado (Tenía cupo el ${fechaCita} a las ${formatearHora12(horaCita)})`
+                }]);
+
+                alert(`🗑️ Agenda liberada con éxito. El espacio ya está disponible.`);
+                cargarDatos();
+            } catch (e) {
+                alert("Error al eliminar la cita: " + e.message);
+            }
         }
 
         function SkinnerEdicion(index) {
@@ -425,15 +444,16 @@
 
                 contenedor.innerHTML += `
                     <div class="paciente-item" data-nombre="${p.nombre}" data-celular="${p.telefono}" data-fecha="${p.fecha_cita}">
-                        <div style="max-width: 55%;">
+                        <div style="max-width: 45%;">
                             <strong>${p.nombre}</strong><br>
                             <span style="font-size:12px; color:var(--text-dim)">${p.tratamiento} (${formatearMoneda(p.valor_pagado)})</span><br>
                             <span style="font-size:11px;" class="${claseColor}">${estadoTexto}</span>
                         </div>
-                        <div>
+                        <div style="display:flex; gap:2px; align-items:center;">
                             <a href="${urlWa}" class="c-wa" target="_blank">📱</a>
                             <button class="btn-compacto c-historial" onclick="verHistorialPaciente('${p.nombre}')">🔍</button>
                             <button class="btn-compacto c-editar" onclick="SkinnerEdicion(${index})">✏️</button>
+                            <button class="btn-compacto c-eliminar" onclick="eliminarCita(${p.id}, '${p.nombre}', '${p.fecha_cita}', '${p.hora_cita}')">🗑️</button>
                         </div>
                     </div>
                 `;
