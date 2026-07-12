@@ -7,6 +7,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
+    <!-- 📚 Librería Oficial de Supabase Cloud -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
         :root {
             --bg-color: #121212;
@@ -153,7 +156,7 @@
 </head>
 <body>
 
-    <!-- 1. PANTALLA DE ACCESO -->
+    <!-- PANTALLA DE ACCESO -->
     <div id="pantalla-bloqueo">
         <h2 style="text-align: center;">🔒 Acceso Restringido</h2>
         <p style="color: var(--text-dim); text-align: center; margin-bottom: 20px;">Ingresa la contraseña para gestionar LA SALA.</p>
@@ -162,9 +165,8 @@
         <p id="error-msg" style="color: #ff5252; margin-top: 10px; display: none;">❌ Contraseña incorrecta</p>
     </div>
 
-    <!-- CONTENIDO DE LA APP -->
+    <!-- CONTENIDO PRINCIPAL -->
     <div id="contenido-app">
-        
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h2>🏋️‍♂️ QUEENFIT Pro</h2>
             <div style="display: flex; gap: 8px;">
@@ -175,7 +177,7 @@
         
         <div id="status-cloud">Conectando...</div>
 
-        <!-- PESTAÑA 1: GESTIÓN DE CLIENTAS -->
+        <!-- PESTAÑA GESTIÓN -->
         <div id="tab-clientas" class="tab-content active">
             <div class="card">
                 <h3 id="form-titulo">Registrar Miembro</h3>
@@ -193,7 +195,7 @@
             </div>
         </div>
 
-        <!-- PESTAÑA 2: HISTORIAL DE PAGOS -->
+        <!-- PESTAÑA HISTORIAL -->
         <div id="tab-historial" class="tab-content">
             <div class="card">
                 <h3>📜 Registro Histórico de Pagos</h3>
@@ -202,27 +204,30 @@
             </div>
         </div>
 
-        <!-- BARRA DE PESTAÑAS INFERIOR -->
+        <!-- BARRA INFERIOR -->
         <div class="tab-bar">
-            <button class="tab-bar-button tab-button active" onclick="cambiarPestaña('tab-clientas', this)">
+            <button class="tab-button active" onclick="cambiarPestaña('tab-clientas', this)">
                 <span class="tab-icon">👥</span>Clientas
             </button>
-            <button class="tab-bar-button tab-button" onclick="cambiarPestaña('tab-historial', this)">
+            <button class="tab-button" onclick="cambiarPestaña('tab-historial', this)">
                 <span class="tab-icon">📜</span>Historial
             </button>
         </div>
-
     </div>
 
     <script>
         const CLAVE_ACCESO = "1876"; 
         
-        // 🔑 REEMPLAZA ESTO CON EL ID LARGO DE TU DOCUMENTO DE GOOGLE DRIVE
-        const DRIVE_FILE_ID = "1SAXjeh0C9LnJKmMhjuZQ-zrm6yZOOMV0HepuK7csFsw"; 
+        // 🔑 REEMPLAZA ESTAS DOS LÍNEAS CON TUS DATOS REALES DE SUPABASE (Paso 3)
+        const SUPABASE_URL = "https://hvinbsrtwllpdppgxdpw.supabase.co/rest/v1/";
+        const SUPABASE_ANON_KEY = "sb_publishable_aLuAKNoFHcKZvb9jq2mAXw_8Ioa-vQJ";
+
+        // Inicializar el cliente de Supabase
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let clientes = [];
         let historialPagos = [];
-        let editandoIndex = -1; // -1 significa que no estamos editando a nadie
+        let editandoId = null; // Guardamos el ID real de la base de datos
 
         if (sessionStorage.getItem('auth_gym_nube') === 'true') {
             mostrarApp();
@@ -255,13 +260,8 @@
         function cambiarPestaña(tabId, boton) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            
             document.getElementById(tabId).classList.add('active');
             boton.classList.add('active');
-            
-            if(tabId === 'tab-historial') {
-                renderizarHistorial();
-            }
         }
 
         function establecerFechaDefecto() {
@@ -270,43 +270,31 @@
             document.getElementById('fechaVence').value = hoy.toISOString().split('T')[0];
         }
 
+        // DESCARGAR DATOS DESDE SUPABASE REAL CLOUD
         async function cargarDatosDesdeNube() {
-            document.getElementById('status-cloud').innerText = "🔄 Sincronizando con Google Drive...";
+            document.getElementById('status-cloud').innerText = "🔄 Sincronizando con Supabase Central...";
             try {
-                const url = "https://docs.google.com/document/d/" + DRIVE_FILE_ID + "/export?format=txt";
-                const respuesta = await fetch(url);
-                const texto = await respuesta.text();
-                const textoLimpio = texto.trim().replace(/^\uFEFF/, '');
-                
-                const datosCompletos = JSON.parse(textoLimpio || '{"clientes":[], "historial":[]}');
-                
-                if (Array.isArray(datosCompletos)) {
-                    clientes = datosCompletos;
-                    historialPagos = [];
-                } else {
-                    clientes = datosCompletos.clientes || [];
-                    historialPagos = datosCompletos.historial || [];
-                }
-                
-                document.getElementById('status-cloud').innerText = "✅ QUEENFIT Sincronizado";
+                // 1. Cargar Clientas
+                const resClientes = await _supabase.from('clientes').select('*').order('nombre', { ascending: true });
+                if (resClientes.error) throw resClientes.error;
+                clientes = resClientes.data || [];
+
+                // 2. Cargar Historial
+                const resHistorial = await _supabase.from('historial').select('*').order('created_at', { ascending: false });
+                if (resHistorial.error) throw resHistorial.error;
+                historialPagos = resHistorial.data || [];
+
+                document.getElementById('status-cloud').innerText = "✅ Base de Datos QUEENFIT Online";
                 renderizarClientes();
                 renderizarHistorial();
             } catch (error) {
-                document.getElementById('status-cloud').innerText = "❌ Error al conectar. Usando copia local.";
-                const backup = JSON.parse(localStorage.getItem('gym_backup_pro')) || {clientes:[], historial:[]};
-                clientes = backup.clientes || [];
-                historialPagos = backup.historial || [];
-                renderizarClientes();
-                renderizarHistorial();
+                console.error(error);
+                document.getElementById('status-cloud').innerText = "❌ Error en Nube. Verifica tus llaves API.";
             }
         }
 
-        function guardarRespaldoLocal() {
-            const dataToSave = { clientes: clientes, historial: historialPagos };
-            localStorage.setItem('gym_backup_pro', JSON.stringify(dataToSave));
-        }
-
-        function guardarCliente() {
+        // GUARDAR O EDITAR EN SUPABASE
+        async function guardarCliente() {
             const nombreInput = document.getElementById('nombre');
             const telefonoInput = document.getElementById('telefono');
             const fechaInput = document.getElementById('fechaVence');
@@ -320,66 +308,56 @@
                 return;
             }
 
-            if (editandoIndex === -1) {
-                // MODO NUEVO: Agregar clienta nueva
-                clientes.push({ nombre, telefono, fechaVence });
-                
-                const fechaHoy = new Date().toISOString().split('T')[0];
-                historialPagos.unshift({
-                    nombre: nombre,
-                    fechaPago: fechaHoy,
-                    concepto: "Inscripción / Nueva mensualidad"
-                });
-                alert('¡Clienta registrada con éxito!');
-            } else {
-                // MODO EDICIÓN: Modificar datos existentes
-                const viejaMembresia = clientes[editandoIndex];
-                
-                // Si cambió el nombre o el teléfono, dejar constancia sutil en el historial
-                if (viejaMembresia.nombre !== nombre || viejaMembresia.telefono !== telefono) {
-                    const fechaHoy = new Date().toISOString().split('T')[0];
-                    historialPagos.unshift({
-                        nombre: nombre,
-                        fechaPago: fechaHoy,
-                        concepto: "Datos de contacto actualizados (Antes: " + viejaMembresia.nombre + ")"
-                    });
-                }
-                
-                clientes[editandoIndex] = { nombre, telefono, fechaVence };
-                alert('¡Datos de la clienta actualizados!');
-                cancelarEdicion(); // Restablece el formulario
-            }
+            document.getElementById('status-cloud').innerText = "🚀 Guardando cambios en la nube...";
 
-            guardarRespaldoLocal();
-            
-            nombreInput.value = '';
-            telefonoInput.value = '';
-            establecerFechaDefecto();
-            document.getElementById('status-cloud').innerText = "✅ Guardado localmente";
-            renderizarClientes();
+            try {
+                if (editandoId === null) {
+                    // CLIENTA NUEVA
+                    const { error } = await _supabase.from('clientes').insert([{ nombre, telefono, fechaVence }]);
+                    if (error) throw error;
+
+                    const fechaHoy = new Date().toISOString().split('T')[0];
+                    await _supabase.from('historial').insert([{ nombre, fechaPago: fechaHoy, concepto: "Inscripción / Nueva mensualidad" }]);
+                    
+                    alert('¡Clienta registrada permanentemente en la nube!');
+                } else {
+                    // EDITAR EXISTENTE
+                    const { error } = await _supabase.from('clientes').update({ nombre, telefono, fechaVence }).eq('id', editandoId);
+                    if (error) throw error;
+
+                    const fechaHoy = new Date().toISOString().split('T')[0];
+                    await _supabase.from('historial').insert([{ nombre, fechaPago: fechaHoy, concepto: "Datos de contacto actualizados" }]);
+                    
+                    alert('¡Datos actualizados con éxito!');
+                    cancelarEdicion();
+                }
+
+                nombreInput.value = '';
+                telefonoInput.value = '';
+                establecerFechaDefecto();
+                cargarDatosDesdeNube(); // Recarga la pantalla con los datos reales de internet
+            } catch (error) {
+                alert("Error al guardar en la base de datos: " + error.message);
+            }
         }
 
-        // NUEVA FUNCIÓN: CARGAR DATOS PARA EDITAR
         function iniciarEdicion(index) {
-            editandoIndex = index;
             const cliente = clientes[index];
+            editandoId = cliente.id; // Guardamos el identificador numérico/uuid real
 
             document.getElementById('nombre').value = cliente.nombre;
             document.getElementById('telefono').value = cliente.telefono;
             document.getElementById('fechaVence').value = cliente.fechaVence;
 
-            // Cambiar textos visuales del formulario
             document.getElementById('form-titulo').innerText = "✏️ Editar Datos de: " + cliente.nombre;
             document.getElementById('btn-guardar').innerText = "Actualizar Clienta";
             document.getElementById('btn-cancelar').style.display = "block";
 
-            // Hacer scroll suave hacia arriba para que el formulario quede a la vista
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // NUEVA FUNCIÓN: CANCELAR LA EDICIÓN
         function cancelarEdicion() {
-            editandoIndex = -1;
+            editandoId = null;
             document.getElementById('nombre').value = '';
             document.getElementById('telefono').value = '';
             establecerFechaDefecto();
@@ -389,24 +367,33 @@
             document.getElementById('btn-cancelar').style.display = "none";
         }
 
-        function renovarMembresia(index) {
+        // RENOVAR MENSUALIDAD DIRECTO EN LA NUBE
+        async function renovarMembresia(index) {
             const cliente = clientes[index];
             const nuevaFecha = new Date();
             nuevaFecha.setMonth(nuevaFecha.getMonth() + 1);
             const nuevaFechaStr = nuevaFecha.toISOString().split('T')[0];
             
-            cliente.fechaVence = nuevaFechaStr;
-            
-            const fechaHoy = new Date().toISOString().split('T')[0];
-            historialPagos.unshift({
-                nombre: cliente.nombre,
-                fechaPago: fechaHoy,
-                concepto: "Renovación mensualidad (Vence: " + nuevaFechaStr + ")"
-            });
-            
-            guardarRespaldoLocal();
-            renderizarClientes();
-            alert('¡Mensualidad de ' + cliente.nombre + ' renovada por 1 mes más!');
+            document.getElementById('status-cloud').innerText = "⏳ Procesando renovación...";
+
+            try {
+                // Actualizar en Supabase
+                const { error } = await _supabase.from('clientes').update({ fechaVence: nuevaFechaStr }).eq('id', cliente.id);
+                if (error) throw error;
+
+                // Añadir al Historial en Supabase
+                const fechaHoy = new Date().toISOString().split('T')[0];
+                await _supabase.from('historial').insert([{
+                    nombre: cliente.nombre,
+                    fechaPago: fechaHoy,
+                    concepto: "Renovación mensualidad (Vence: " + nuevaFechaStr + ")"
+                }]);
+
+                alert('¡Mensualidad de ' + cliente.nombre + ' renovada!');
+                cargarDatosDesdeNube();
+            } catch (error) {
+                alert("No se pudo renovar: " + error.message);
+            }
         }
 
         function filtrarClientes() {
@@ -428,7 +415,7 @@
             contenedor.innerHTML = '';
 
             if (clientes.length === 0) {
-                contenedor.innerHTML = '<p style="color:var(--text-dim)">No hay clientas registradas.</p>';
+                contenedor.innerHTML = '<p style="color:var(--text-dim)">No hay clientas registradas en la base de datos.</p>';
                 return;
             }
 
@@ -474,7 +461,7 @@
             contenedor.innerHTML = '';
 
             if (historialPagos.length === 0) {
-                contenedor.innerHTML = '<p style="color:var(--text-dim)">Aún no hay registros de pagos.</p>';
+                contenedor.innerHTML = '<p style="color:var(--text-dim)">Aún no hay registros de pagos en la nube.</p>';
                 return;
             }
 
