@@ -35,7 +35,7 @@
             margin-bottom: 20px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        input, button {
+        input, button, select {
             width: 100%;
             padding: 12px;
             margin: 8px 0;
@@ -44,7 +44,7 @@
             box-sizing: border-box;
             font-size: 16px;
         }
-        input { background: #2a2a2a; color: #fff; }
+        input, select { background: #2a2a2a; color: #fff; }
         button { background: var(--accent); color: #000; font-weight: bold; cursor: pointer; }
         .cliente-item {
             border-bottom: 1px solid #333;
@@ -156,13 +156,14 @@
 </head>
 <body>
 
-    <!-- PANTALLA DE ACCESO -->
+    <!-- PANTALLA DE ACCESO + RECUPERACIÓN -->
     <div id="pantalla-bloqueo">
         <h2 style="text-align: center;">🔒 Acceso Restringido</h2>
         <p style="color: var(--text-dim); text-align: center; margin-bottom: 20px;">Ingresa la contraseña para gestionar LA SALA.</p>
         <input type="password" id="pass-input" placeholder="Contraseña de acceso" style="text-align: center; max-width: 300px;">
         <button onclick="verificarAcceso()" style="max-width: 300px; margin-top: 15px;">Entrar</button>
         <p id="error-msg" style="color: #ff5252; margin-top: 10px; display: none;">❌ Contraseña incorrecta</p>
+        <span onclick="recuperarClave()" style="color: var(--accent); font-size: 13px; margin-top: 25px; cursor: pointer; text-decoration: underline;">¿Olvidaste la contraseña?</span>
     </div>
 
     <!-- CONTENIDO PRINCIPAL -->
@@ -183,6 +184,7 @@
                 <h3 id="form-titulo">Registrar Miembro</h3>
                 <input type="text" id="nombre" placeholder="Nombre Completo">
                 <input type="tel" id="telefono" placeholder="Teléfono (ej: 573001234567)">
+                <input type="number" id="valorMembresia" placeholder="Valor Mensualidad $ (ej: 70000)">
                 <input type="date" id="fechaVence">
                 <button id="btn-guardar" onclick="guardarCliente()">Guardar y Sincronizar</button>
                 <button id="btn-cancelar" onclick="cancelarEdicion()" style="background:#555; color:#fff; display:none; margin-top: 5px;">Cancelar Edición</button>
@@ -217,8 +219,8 @@
 
     <script>
         const CLAVE_ACCESO = "1876"; 
+        const PALABRA_SECRETA = "majo"; // 🔑 Esta palabra te recordará la contraseña si la olvidas
         
-        // 🔑 URL LIMPIA Y CORREGIDA AQUÍ
         const SUPABASE_URL = "https://hvinbsrtwllpdppgxdpw.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_aLuAKNoFHcKZvb9jq2mAXw_8Ioa-vQJ";
 
@@ -241,6 +243,15 @@
             } else {
                 errorMsg.style.display = 'block';
                 document.getElementById('pass-input').value = '';
+            }
+        }
+
+        function recuperarClave() {
+            const respuesta = prompt("🔑 Recuperación: ¿Cuál es tu nombre de pila o palabra secreta de cosmiatría?").toLowerCase().trim();
+            if (respuesta === PALABRA_SECRETA) {
+                alert(`🔓 ¡Validación Exitosa! Tu contraseña de acceso a LA SALA es: ${CLAVE_ACCESO}`);
+            } else {
+                alert("❌ Respuesta incorrecta. No se puede revelar la clave.");
             }
         }
 
@@ -273,6 +284,11 @@
             document.getElementById('fechaVence').value = hoy.toISOString().split('T')[0];
         }
 
+        function formatearMoneda(valor) {
+            if (!valor) return "$0";
+            return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(valor);
+        }
+
         async function cargarDatosDesdeNube() {
             document.getElementById('status-cloud').innerText = "🔄 Sincronizando con Supabase Central...";
             try {
@@ -280,12 +296,11 @@
                 if (resClientes.error) throw resClientes.error;
                 clientes = resClientes.data || [];
 
-                // Validamos orden cronológico descendente usando created_at o id
                 const resHistorial = await _supabase.from('historial').select('*').order('id', { ascending: false });
                 if (resHistorial.error) throw resHistorial.error;
                 historialPagos = resHistorial.data || [];
 
-                document.getElementById('status-cloud').innerText = "✅ Base de Datos QUEENFIT Online";
+                document.getElementById('status-cloud').innerText = "Base de Datos QUEENFIT Online";
                 renderizarClientes();
                 renderizarHistorial();
             } catch (error) {
@@ -297,14 +312,16 @@
         async function guardarCliente() {
             const nombreInput = document.getElementById('nombre');
             const telefonoInput = document.getElementById('telefono');
+            const valorInput = document.getElementById('valorMembresia');
             const fechaInput = document.getElementById('fechaVence');
 
             const nombre = nombreInput.value.trim();
             const telefono = telefonoInput.value.trim();
+            const valorMembresia = valorInput.value.trim() || "0";
             const fechaVence = fechaInput.value;
 
             if (!nombre || !telefono || !fechaVence) {
-                alert('Por favor llena todos los campos');
+                alert('Por favor llena los campos obligatorios (Nombre, Teléfono y Fecha)');
                 return;
             }
 
@@ -312,19 +329,19 @@
 
             try {
                 if (editandoId === null) {
-                    const { error } = await _supabase.from('clientes').insert([{ nombre, telefono, fechaVence }]);
+                    const { error } = await _supabase.from('clientes').insert([{ nombre, telefono, fechaVence, valorMembresia }]);
                     if (error) throw error;
 
                     const fechaHoy = new Date().toISOString().split('T')[0];
-                    await _supabase.from('historial').insert([{ nombre, fechaPago: fechaHoy, concepto: "Inscripción / Nueva mensualidad" }]);
+                    await _supabase.from('historial').insert([{ nombre, fechaPago: fechaHoy, concepto: `Inscripción / Plan inicial asignado (${formatearMoneda(valorMembresia)})` }]);
                     
-                    alert('¡Clienta registrada permanentemente en la nube!');
+                    alert('¡Clienta registrada permanentemente!');
                 } else {
-                    const { error } = await _supabase.from('clientes').update({ nombre, telefono, fechaVence }).eq('id', editandoId);
+                    const { error } = await _supabase.from('clientes').update({ nombre, telefono, fechaVence, valorMembresia }).eq('id', editandoId);
                     if (error) throw error;
 
                     const fechaHoy = new Date().toISOString().split('T')[0];
-                    await _supabase.from('historial').insert([{ nombre, fechaPago: fechaHoy, concepto: "Datos de contacto actualizados" }]);
+                    await _supabase.from('historial').insert([{ nombre, fechaPago: fechaHoy, concepto: "Perfil actualizado y ajuste de parámetros de cobro" }]);
                     
                     alert('¡Datos actualizados con éxito!');
                     cancelarEdicion();
@@ -332,6 +349,7 @@
 
                 nombreInput.value = '';
                 telefonoInput.value = '';
+                valorInput.value = '';
                 establecerFechaDefecto();
                 cargarDatosDesdeNube();
             } catch (error) {
@@ -345,6 +363,7 @@
 
             document.getElementById('nombre').value = cliente.nombre;
             document.getElementById('telefono').value = cliente.telefono;
+            document.getElementById('valorMembresia').value = cliente.valorMembresia || "";
             document.getElementById('fechaVence').value = cliente.fechaVence;
 
             document.getElementById('form-titulo').innerText = "✏️ Editar Datos de: " + cliente.nombre;
@@ -358,6 +377,7 @@
             editandoId = null;
             document.getElementById('nombre').value = '';
             document.getElementById('telefono').value = '';
+            document.getElementById('valorMembresia').value = '';
             establecerFechaDefecto();
 
             document.getElementById('form-titulo').innerText = "Registrar Miembro";
@@ -365,29 +385,52 @@
             document.getElementById('btn-cancelar').style.display = "none";
         }
 
+        // 🔄 NUEVA RENOVACIÓN INTELIGENTE: SACA DE MORA Y PREGUNTA DETALLES DEL PAGO
         async function renovarMembresia(index) {
             const cliente = clientes[index];
-            const nuevaFecha = new Date();
-            nuevaFecha.setMonth(nuevaFecha.getMonth() + 1);
-            const nuevaFechaStr = nuevaFecha.toISOString().split('T')[0];
+            const precioMensual = parseInt(cliente.valorMembresia) || 0;
+
+            // 1. Preguntar cuántos meses va a pagar
+            const mesesAPagarStr = prompt(`💵 SACAR DE MORA A: ${cliente.nombre}\n¿Cuántos meses va a cancelar hoy?`, "1");
+            if (mesesAPagarStr === null) return; // Canceló la operación
+            const meses = parseInt(mesesAPagarStr) || 1;
+
+            // 2. Preguntar la fecha real en la que hizo el pago
+            const fechaHoyStr = new Date().toISOString().split('T')[0];
+            const fechaPagoReal = prompt(`📅 Ingrese la FECHA REAL en la que recibió el dinero (Año-Mes-Día):`, fechaHoyStr);
+            if (fechaPagoReal === null) return;
+
+            // 3. Calcular nueva fecha de vencimiento extendida
+            let fechaBase = new Date(cliente.fechaVence + 'T00:00:00');
+            const hoy = new Date();
             
-            document.getElementById('status-cloud').innerText = "⏳ Procesando renovación...";
+            // Si ya estaba vencida, la fecha base arranca desde hoy para no acumular mora falsa
+            if (fechaBase < hoy) {
+                fechaBase = hoy;
+            }
+            
+            fechaBase.setMonth(fechaBase.getMonth() + meses);
+            const nuevaFechaStr = fechaBase.toISOString().split('T')[0];
+            const totalRecibido = precioMensual * meses;
+            
+            document.getElementById('status-cloud').innerText = "⏳ Procesando abono y sacando de mora...";
 
             try {
+                // Actualizar fecha en Supabase
                 const { error } = await _supabase.from('clientes').update({ fechaVence: nuevaFechaStr }).eq('id', cliente.id);
                 if (error) throw error;
 
-                const fechaHoy = new Date().toISOString().split('T')[0];
+                // Añadir al Historial con los datos reales ingresados
                 await _supabase.from('historial').insert([{
                     nombre: cliente.nombre,
-                    fechaPago: fechaHoy,
-                    concepto: "Renovación mensualidad (Vence: " + nuevaFechaStr + ")"
+                    fechaPago: fechaPagoReal,
+                    concepto: `Recibido: ${formatearMoneda(totalRecibido)} por ${meses} Mes(es) de entreno. (Nuevo vencimiento: ${nuevaFechaStr})`
                 }]);
 
-                alert('¡Mensualidad de ' + cliente.nombre + ' renovada!');
+                alert(`✅ ¡Éxito!\n${cliente.nombre} ha salido de mora.\nTotal ingresado: ${formatearMoneda(totalRecibido)}\nPróximo Vence: ${nuevaFechaStr}`);
                 cargarDatosDesdeNube();
             } catch (error) {
-                alert("No se pudo renovar: " + error.message);
+                alert("No se pudo procesar el pago: " + error.message);
             }
         }
 
@@ -420,6 +463,7 @@
                 const fVence = new Date(c.fechaVence + 'T00:00:00');
                 const diffTiempo = fVence - hoyMs;
                 const diasRestantes = Math.ceil(diffTiempo / (1000 * 60 * 60 * 24));
+                const precioMensual = parseInt(c.valorMembresia) || 0;
 
                 let claseEstado = "ok";
                 let textoEstado = `${diasRestantes} días restantes`;
@@ -433,12 +477,13 @@
                     const diasVencidos = Math.abs(diasRestantes);
                     
                     if (diasVencidos <= 30) {
-                        textoEstado = `Vencido hace ${diasVencidos} días`;
-                        plantillaMensaje = `Hola ${c.nombre}, esperamos que estés muy bien. Te escribimos de parte de la familia QUEENFIT para recordarte que tu mensualidad de entreno ya se encuentra vencida desde el pasado ${c.fechaVence} (hace ${diasVencidos} días). Te invitamos a ponerte al día en la llave @3104439749 para continuar con toda la energía en tus entrenamientos. Si ya realizaste tu pago, por favor omite este mensaje 🥰. ¡Te esperamos en la sala!`;
+                        textoEstado = `Vencido hace ${diasVencidos} días (Debe: ${formatearMoneda(precioMensual)})`;
+                        plantillaMensaje = `Hola ${c.nombre}, esperamos que estés muy bien. Te escribimos de parte de la familia QUEENFIT para recordarte que tu mensualidad de entreno ya se encuentra vencida desde el pasado ${c.fechaVence} (hace ${diasVencidos} días), presentando un saldo pendiente de ${formatearMoneda(precioMensual)}. Te invitamos a ponerte al día en la llave @3104439749 para continuar con toda la energía en tus entrenamientos. Si ya realizaste tu pago, por favor omite este mensaje 🥰. ¡Te esperamos en la sala!`;
                     } else {
                         const mesesDeuda = Math.floor(diasVencidos / 30);
-                        textoEstado = `⚠️ Debe ${mesesDeuda} meses (${diasVencidos} días)`;
-                        plantillaMensaje = `Hola ${c.nombre}, de parte de la familia QUEENFIT nos comunicamos contigo porque registramos en el sistema que tu membresía venció desde el pasado ${c.fechaVence} y presentas un saldo pendiente acumulado de aproximadamente ${mesesDeuda} meses de entreno. Queremos invitarte a que te pongas al día mediante nuestra llave de pagos @3104439749 o te acerques para validar tu estado. Si ya cancelaste o tienes alguna duda, escríbenos con confianza 🥰. ¡Queremos seguir acompañándote en tus metas!`;
+                        const deudaTotalCalculada = precioMensual * mesesDeuda;
+                        textoEstado = `⚠️ Mora: ${mesesDeuda} Meses (Debe: ${formatearMoneda(deudaTotalCalculada)})`;
+                        plantillaMensaje = `Hola ${c.nombre}, de parte de la familia QUEENFIT nos comunicamos contigo porque registramos en el sistema que tu membresía venció desde el pasado ${c.fechaVence} y presentas un saldo pendiente acumulado de aproximadamente ${mesesDeuda} meses de entreno, correspondiente a un total de ${formatearMoneda(deudaTotalCalculada)}. Queremos invitarte a que te pongas al día mediante nuestra llave de pagos @3104439749 o te acerques para validar tu estado. Si ya cancelaste o tienes alguna duda, escríbenos con confianza 🥰. ¡Queremos seguir acompañándote en tus metas!`;
                     }
                 }
 
@@ -447,13 +492,14 @@
 
                 contenedor.innerHTML += `
                     <div class="cliente-item" data-nombre="${c.nombre}">
-                        <div style="max-width: 50%;">
+                        <div style="max-width: 55%;">
                             <strong>${c.nombre}</strong><br>
-                            <span class="${claseEstado}">${textoEstado}</span>
+                            <span class="${claseEstado}">${textoEstado}</span><br>
+                            <span style="font-size: 12px; color: var(--text-dim)">Mensualidad: ${formatearMoneda(precioMensual)}</span>
                         </div>
                         <div style="display:flex; align-items:center; flex-wrap: wrap; justify-content: flex-end; gap: 4px;">
                             <a href="${urlWa}" class="btn-wa" target="_blank">📱 Avisar</a>
-                            <button class="btn-renovar" onclick="renovarMembresia(${index})">🔄 +1 M</button>
+                            <button class="btn-renovar" onclick="renovarMembresia(${index})">💵 Pagar</button>
                             <button class="btn-editar" onclick="iniciarEdicion(${index})">✏️</button>
                         </div>
                     </div>
@@ -473,7 +519,7 @@
             historialPagos.forEach((h) => {
                 contenedor.innerHTML += `
                     <div class="historial-item">
-                        <span style="color:var(--accent); font-weight:bold;">💵 ${h.fechaPago}</span> - 
+                        <span style="color:var(--accent); font-weight:bold;">📅 Fecha Recibido: ${h.fechaPago}</span> - 
                         <strong>${h.nombre}</strong><br>
                         <span style="color:var(--text-dim); font-size:13px;">${h.concepto}</span>
                     </div>
