@@ -260,7 +260,7 @@
             try {
                 if(editandoId === null) {
                     // Guardar cita
-                    const { error } = await _supabase.from('pacientes_citas').insert([{ nombre, telefono, tratamiento, fecha_cita, hora_cita, valor_pagaged: valor, valor_pagado: valor, metodo_pago: metodo }]);
+                    const { error } = await _supabase.from('pacientes_citas').insert([{ nombre, telefono, tratamiento, fecha_cita, hora_cita, valor_pagado: valor, metodo_pago: metodo }]);
                     if (error) throw error;
                     
                     // Inyectar al Historial Contable inmediatamente
