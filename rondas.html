@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Bitácora Térmica | Control Operativo Total</title>
+    <title>Bitácora Térmica | Control Horas Operativas</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
@@ -253,10 +253,16 @@
             <div id="sec-agua" class="seccion-contenido">
                 <div class="campo-grupal"><label>Presión Suministro (30 - 60 PSI)</label><input type="number" id="agua_presion_suministro" step="any" oninput="validarRango(this, 30, 60)"></div>
                 <div class="campo-grupal"><label>Nivel Tanq. Almacenamiento (5 - 7.5 MTS)</label><input type="number" id="agua_nivel_tanque_almacen" step="any" oninput="validarRango(this, 5, 7.5)"></div>
+                
+                <!-- DURACIÓN EXACTA DE OPERACIÓN SIN AM O PM -->
                 <div class="campo-grupal">
-                    <label>Horas de Operación (diarias) <span class="tag-range">[Formato HH:MM]</span></label>
-                    <input type="time" id="agua_horas_operacion">
+                    <label>Horas de Operación (diarias):</label>
+                    <div style="display: flex; gap: 8px; margin-top: 4px;">
+                        <input type="number" id="agua_horas_entero" min="0" max="24" placeholder="Horas (0-24)" style="margin:0;">
+                        <input type="number" id="agua_minutos_entero" min="0" max="59" placeholder="Minutos (0-59)" style="margin:0;">
+                    </div>
                 </div>
+                
                 <div class="campo-grupal">
                     <label>Planta en Servicio:</label>
                     <select id="agua_planta_en_servicio"><option value="Encendida">Encendida</option><option value="Apagada">Apagada</option></select>
@@ -458,8 +464,8 @@
                 contenedor.innerHTML += `
                     <div class="ronda-item">
                         <b>📅 ${r.fecha} [Turno: ${r.turno}]</b><br>
-                        <span style="color:var(--success)">⏰ Registro: ${horaLocal}</span> | 👷 ${r.operador}<br>
-                        <span style="color:var(--text-dim)">Obs: ${r.observaciones || 'Sin anomalías'}</span>
+                        <span style="color:var(--success)">⏰ Horas Agua Registradas: ${r.agua_horas_operacion || '00:00'}</span><br>
+                        <span style="color:var(--text-dim)">👷 Operador: ${r.operador} | Registro Real: ${horaLocal}</span>
                     </div>
                 `;
             });
@@ -492,8 +498,10 @@
                         label: nombreVisible,
                         data: rondasFiltradas.map(r => {
                             if(campo === 'agua_horas_operacion' && r[campo]){
-                                const [h, m] = r[campo].split(':').map(Number);
-                                return h + (m/60);
+                                const parts = r[campo].split(':');
+                                if(parts.length === 2) {
+                                    return parseFloat(parts[0]) + (parseFloat(parts[1])/60);
+                                }
                             }
                             return r[campo];
                         }),
@@ -531,15 +539,21 @@
             const observaciones = document.getElementById('observaciones').value.trim();
 
             if(!operador) { alert("⚠️ Por favor ingresa el nombre del operador."); return; }
-            document.getElementById('status-cloud').innerText = "🚀 Guardando en la nube industrial...";
+
+            // 🛠️ FORMATEO AUTOMÁTICO HH:MM SIN DEPENDER DE SELECTORES COMPLEJOS
+            const hEntero = parseInt(document.getElementById('agua_horas_entero').value) || 0;
+            const mEntero = parseInt(document.getElementById('agua_minutos_entero').value) || 0;
+            const stringHorasAgua = String(hEntero).padStart(2, '0') + ":" + String(mEntero).padStart(2, '0');
+
+            document.getElementById('status-cloud').innerText = "🚀 Guardando con formato de duración industrial...";
 
             const payload = {
                 fecha, turno, operador, observaciones,
                 ci_presion_salida: parseFloat(document.getElementById('ci_presion_salida').value) || null,
-                ci_volt_bateria: parseFloat(document.getElementById('ci_volt_bateria_1').value) || null, // Mapeado base
+                ci_volt_bateria: parseFloat(document.getElementById('ci_volt_bateria_1').value) || null,
                 ci_volt_bateria_1: parseFloat(document.getElementById('ci_volt_bateria_1').value) || null,
                 ci_volt_bateria_2: parseFloat(document.getElementById('ci_volt_bateria_2').value) || null,
-                ci_nivel_tk_diesel: document.getElementById('ci_nivel_tk_diesel').value, // Registra el % numérico en formato de cadena
+                ci_nivel_tk_diesel: document.getElementById('ci_nivel_tk_diesel').value, 
                 ci_nivel_tk_agua: parseFloat(document.getElementById('ci_nivel_tk_agua').value) || null,
                 ci_prueba_bomba_diesel: document.getElementById('ci_prueba_bomba_diesel').value,
                 ci_sistema_disponible: document.getElementById('ci_sistema_disponible').value,
@@ -576,11 +590,11 @@
                 
                 agua_presion_suministro: parseFloat(document.getElementById('agua_presion_suministro').value) || null,
                 agua_nivel_tanque_almacen: parseFloat(document.getElementById('agua_nivel_tanque_almacen').value) || null,
-                agua_horas_operacion: document.getElementById('agua_horas_operacion').value, // Almacena la cadena de tiempo HH:MM
+                agua_horas_operacion: stringHorasAgua, // Guarda el string exacto limpio "HH:MM"
                 agua_planta_en_servicio: document.getElementById('agua_planta_en_servicio').value,
                 
                 comb_valvulas_alineadas: document.getElementById('comb_valvulas_alineadas').value,
-                comb_nivel_tanque_almacen: document.getElementById('comb_nivel_tanque_a').value, // Compatibilidad con el esquema
+                comb_nivel_tanque_almacen: document.getElementById('comb_nivel_tanque_a').value, 
                 comb_nivel_tanque_a: parseFloat(document.getElementById('comb_nivel_tanque_a').value) || null,
                 comb_nivel_tanque_b: parseFloat(document.getElementById('comb_nivel_tanque_b').value) || null,
                 comb_tanque_alineado: document.getElementById('comb_tanque_alineado').value,
@@ -598,7 +612,7 @@
             try {
                 const { error } = await _supabase.from('rondas_termica').insert([payload]);
                 if(error) throw error;
-                alert("✅ Estructura operativa procesada. Ronda guardada con éxito.");
+                alert("✅ ¡Perfecto! Duración de planta registrada exactamente en formato HH:MM.");
                 window.location.reload();
             } catch(e) { alert("Error: " + e.message); }
         }
