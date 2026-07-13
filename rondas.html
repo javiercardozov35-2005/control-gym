@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Bitácora Térmica | Análisis Predictivo Avanzado</title>
+    <title>Bitácora Térmica | Análisis Multivariable</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
@@ -83,7 +83,18 @@
         .ronda-item { border-bottom: 1px solid #1e293b; padding: 12px 0; font-size: 14px; }
         
         .contenedor-grafica {
-            position: relative; height: 260px; width: 100%; margin-top: 10px; background: #0f172a; padding: 10px; border-radius: 8px; box-sizing: border-box;
+            position: relative; height: 280px; width: 100%; margin-top: 15px; background: #0f172a; padding: 10px; border-radius: 8px; box-sizing: border-box;
+        }
+
+        /* Estilos para el panel de selección múltiple */
+        .grid-checkboxes {
+            display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 160px; overflow-y: auto; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #334155; margin-top: 5px;
+        }
+        .item-checkbox {
+            display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text); cursor: pointer;
+        }
+        .item-checkbox input {
+            width: auto; margin: 0; transform: scale(1.2);
         }
     </style>
 </head>
@@ -293,60 +304,62 @@
             </div>
         </div>
 
-        <!-- PESTAÑA 2: ANALÍTICA INTERACTIVA AVANZADA -->
+        <!-- PESTAÑA 2: ANALÍTICA MULTIVARIABLE INTERACTIVA -->
         <div id="tab-analitica" class="tab-content">
             <div class="card">
-                <h3>📈 Monitor Predictivo Avanzado</h3>
+                <h3>📈 Análisis Predictivo Combinado</h3>
                 
                 <!-- FILTRO POR FECHAS -->
                 <div style="display: flex; gap: 8px; margin-bottom: 10px;">
                     <div style="flex: 1;">
-                        <label style="font-size: 12px; color: var(--text-dim);">Desde:</label>
-                        <input type="date" id="filtro-desde" style="padding: 8px; font-size: 14px;">
+                        <label style="font-size: 11px; color: var(--text-dim);">Desde:</label>
+                        <input type="date" id="filtro-desde" style="padding: 6px; font-size: 14px;">
                     </div>
                     <div style="flex: 1;">
-                        <label style="font-size: 12px; color: var(--text-dim);">Hasta:</label>
-                        <input type="date" id="filtro-hasta" style="padding: 8px; font-size: 14px;">
+                        <label style="font-size: 11px; color: var(--text-dim);">Hasta:</label>
+                        <input type="date" id="filtro-hasta" style="padding: 6px; font-size: 14px;">
                     </div>
                 </div>
 
-                <label>Selecciona Variable Específica:</label>
-                <select id="selector-variable-unica" onchange="actualizarGraficaAnalitica()">
-                    <option value="ci_presion_salida">🔥 CI: Presión Salida (PT604)</option>
-                    <option value="ci_volt_bateria">🔥 CI: Voltaje Batería 1Y2</option>
-                    <option value="ci_nivel_tk_agua">🔥 CI: Nivel Tanque Agua</option>
-                    <option value="comp_pres_aire_tanque">💨 Compresor: Presión Aire Tanque (PG501)</option>
-                    <option value="comp_pres_aire_instrumento">💨 Compresor: Presión Aire Instrumento (PT503)</option>
-                    <option value="comp_pres_difer_secador">💨 Compresor: Presión Diferencial Secador</option>
-                    <option value="ccm_c11_amperimetro">⚡ CCM: Amperímetro C1.1</option>
-                    <option value="ccm_c11_voltimetro">⚡ CCM: Voltímetro C1.1</option>
-                    <option value="ccm_c21_amperimetro">⚡ CCM: Amperímetro C2.1</option>
-                    <option value="ccm_c21_voltimetro">⚡ CCM: Voltímetro C2.1</option>
-                    <option value="ccm_c31_amperimetro">⚡ CCM: Amperímetro C3.1</option>
-                    <option value="ccm_c32_voltimetro">⚡ CCM: Voltímetro C3.2</option>
-                    <option value="ccm_c32_frecuencimetro">⚡ CCM: Frecuencímetro C3.2</option>
-                    <option value="bop_main_volt">🔋 BOP: Main Volt</option>
-                    <option value="bop_chgr_output_volt">🔋 BOP: Charger Output Volt</option>
-                    <option value="bop_chgr_output_amp">🔋 BOP: Charger Output Amp</option>
-                    <option value="sep_nivel">🛢️ Separador: Nivel de Aceite</option>
-                    <option value="trans_temp_aceite">⚡ Transf: Temperatura de Aceite</option>
-                    <option value="trans_temp_devanado">⚡ Transf: Temperatura de Devanado</option>
-                    <option value="agua_presion_suministro">💧 Agua: Presión Suministro</option>
-                    <option value="agua_nivel_tanque_almacen">💧 Agua: Nivel Tanque Almacenamiento</option>
-                    <option value="comb_proteccion_catodica">⛽ Combustible: Protección Catódica (V)</option>
-                    <option value="cg_presion_entrada">🎛️ City Gate: Presión Entrada (PT-1)</option>
-                    <option value="cg_temperatura_entrada">🎛️ City Gate: Temperatura Entrada (TT-1)</option>
-                    <option value="cg_pres_diferencial_filtro">🎛️ City Gate: Presión Diferencial Filtro</option>
-                    <option value="cg_presion_regulada">🎛️ City Gate: Presión Regulada (PT-3)</option>
-                </select>
+                <label style="font-size: 13px; color: var(--text-dim);">Selecciona las Variables a Cruzar:</label>
+                
+                <!-- SECTOR DE CHECKBOXES MÚLTIPLES -->
+                <div class="grid-checkboxes">
+                    <label class="item-checkbox"><input type="checkbox" value="ci_presion_salida" checked> 🔥 CI: Presión Salida (PT604)</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ci_volt_bateria"> 🔥 CI: Voltaje Batería 1Y2</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ci_nivel_tk_agua"> 🔥 CI: Nivel Tanque Agua</label>
+                    <label class="item-checkbox"><input type="checkbox" value="comp_pres_aire_tanque"> 💨 Compresor: Presión Aire Tanque</label>
+                    <label class="item-checkbox"><input type="checkbox" value="comp_pres_aire_instrumento"> 💨 Compresor: Presión Aire Inst.</label>
+                    <label class="item-checkbox"><input type="checkbox" value="comp_pres_difer_secador"> 💨 Compresor: Presión Diferencial</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ccm_c11_amperimetro"> ⚡ CCM: Amperímetro C1.1</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ccm_c11_voltimetro"> ⚡ CCM: Voltímetro C1.1</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ccm_c21_amperimetro"> ⚡ CCM: Amperímetro C2.1</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ccm_c21_voltimetro"> ⚡ CCM: Voltímetro C2.1</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ccm_c31_amperimetro"> ⚡ CCM: Amperímetro C3.1</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ccm_c32_voltimetro"> ⚡ CCM: Voltímetro C3.2</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ccm_c32_frecuencimetro"> ⚡ CCM: Frecuencímetro C3.2</label>
+                    <label class="item-checkbox"><input type="checkbox" value="bop_main_volt"> 🔋 BOP: Main Volt</label>
+                    <label class="item-checkbox"><input type="checkbox" value="bop_chgr_output_volt"> 🔋 BOP: Charger Output Volt</label>
+                    <label class="item-checkbox"><input type="checkbox" value="bop_chgr_output_amp"> 🔋 BOP: Charger Output Amp</label>
+                    <label class="item-checkbox"><input type="checkbox" value="sep_nivel"> 🛢️ Separador: Nivel de Aceite</label>
+                    <label class="item-checkbox"><input type="checkbox" value="trans_temp_aceite" checked> ⚡ Transf: Temperatura de Aceite</label>
+                    <label class="item-checkbox"><input type="checkbox" value="trans_temp_devanado"> ⚡ Transf: Temperatura Devanado</label>
+                    <label class="item-checkbox"><input type="checkbox" value="agua_presion_suministro"> 💧 Agua: Presión Suministro</label>
+                    <label class="item-checkbox"><input type="checkbox" value="agua_nivel_tanque_almacen"> 💧 Agua: Nivel Tanque</label>
+                    <label class="item-checkbox"><input type="checkbox" value="comb_proteccion_catodica"> ⛽ Combustible: Prot. Catódica</label>
+                    <label class="item-checkbox"><input type="checkbox" value="cg_presion_entrada"> 🎛️ City Gate: Presión Entrada</label>
+                    <label class="item-checkbox"><input type="checkbox" value="cg_temperatura_entrada"> 🎛️ City Gate: Temp. Entrada</label>
+                    <label class="item-checkbox"><input type="checkbox" value="cg_pres_diferencial_filtro"> 🎛️ City Gate: Pres. Diferencial</label>
+                    <label class="item-checkbox"><input type="checkbox" value="cg_presion_regulada"> 🎛️ City Gate: Presión Regulada</label>
+                </div>
 
-                <button class="btn-main" onclick="actualizarGraficaAnalitica()" style="margin-top: 5px; padding: 10px; font-size: 14px;">📊 Filtrar y Analizar Rango</button>
+                <button class="btn-main" onclick="actualizarGraficaAnalitica()" style="margin-top: 10px; padding: 10px; font-size: 14px;">📊 Filtrar y Analizar Combinación</button>
 
                 <div class="contenedor-grafica"><canvas id="graficaAnalitica"></canvas></div>
             </div>
             <div class="card">
-                <h3>📋 Historial Cronológico Filtrado</h3>
-                <div id="listaRondas" style="max-height: 200px; overflow-y: auto; font-size: 13px;">Cargando...</div>
+                <h3>📋 Historial Cronológico</h3>
+                <div id="listaRondas" style="max-height: 180px; overflow-y: auto; font-size: 13px;">Cargando...</div>
             </div>
         </div>
 
@@ -365,6 +378,9 @@
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let rondasCargadas = [];
         let chartAnalitico = null;
+
+        // Paleta de colores industriales de alta visibilidad para las líneas de la gráfica
+        const COLORES_LINEAS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#ec4899', '#a855f7', '#06b6d4', '#14b8a6', '#f43f5e', '#10b981', '#6366f1'];
 
         if (sessionStorage.getItem('auth_termica') === 'true') { mostrarApp(); }
 
@@ -389,7 +405,6 @@
             const hoy = new Date();
             const hace7Dias = new Date();
             hace7Dias.setDate(hoy.getDate() - 7);
-            
             document.getElementById('filtro-desde').value = hace7Dias.toISOString().split('T')[0];
             document.getElementById('filtro-hasta').value = hoy.toISOString().split('T')[0];
         }
@@ -441,46 +456,59 @@
             });
         }
 
-        // 🧠 MOTOR PREDICTIVO CON FILTRO DE FECHAS SELECCIONABLES
+        // 🧠 INDUSTRIAL MULTILINE ENGINE - GRAFICACIÓN DE MÚLTIPLES VARIABLES EN SIMULTÁNEO
         function actualizarGraficaAnalitica() {
             if(rondasCargadas.length === 0) return;
             
             const desde = document.getElementById('filtro-desde').value;
             const hasta = document.getElementById('filtro-hasta').value;
-            const campoSeleccionado = document.getElementById('selector-variable-unica').value;
-            const selectElement = document.getElementById('selector-variable-unica');
-            const nombreLegibleVariable = selectElement.options[selectElement.selectedIndex].text;
             
-            // Filtrar matemáticamente el array en base a las fechas seleccionadas
+            // 1. Filtrar las rondas por el rango de fechas
             const rondasFiltradas = rondasCargadas.filter(r => r.fecha >= desde && r.fecha <= hasta);
-            
             renderizarListaRondas(rondasFiltradas);
 
             const etiquetas = rondasFiltradas.map(r => `${r.fecha.slice(5)} (${r.turno})`);
-            const datosExtraidos = rondasFiltradas.map(r => r[campoSeleccionado]);
+            
+            // 2. Detectar qué checkboxes están activos
+            const checkboxes = document.querySelectorAll('.grid-checkboxes input[type="checkbox"]');
+            let datasetsConfig = [];
+            let colorIndex = 0;
+
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    const campo = cb.value;
+                    const nombreVisible = cb.parentElement.innerText.trim();
+                    const colorLinea = COLORES_LINEAS[colorIndex % COLORES_LINEAS.length];
+
+                    datasetsConfig.push({
+                        label: nombreVisible,
+                        data: rondasFiltradas.map(r => r[campo]),
+                        borderColor: colorLinea,
+                        backgroundColor: 'transparent',
+                        borderWidth: 2.5,
+                        pointBackgroundColor: colorLinea,
+                        pointRadius: 3,
+                        tension: 0.15
+                    });
+                    colorIndex++;
+                }
+            });
 
             if(chartAnalitico) chartAnalitico.destroy();
             const ctx = document.getElementById('graficaAnalitica').getContext('2d');
             chartAnalitico = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: etiquetas,
-                    datasets: [{
-                        label: nombreLegibleVariable,
-                        data: datosExtraidos,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        borderWidth: 3,
-                        pointBackgroundColor: '#ef4444',
-                        pointRadius: 4,
-                        tension: 0.15
-                    }]
-                },
+                data: { labels: etiquetas, datasets: datasetsConfig },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#f8fafc', font: { size: 11 } } } },
+                    plugins: { 
+                        legend: { 
+                            labels: { color: '#f8fafc', font: { size: 10 } },
+                            position: 'top'
+                        } 
+                    },
                     scales: {
-                        x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+                        x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', font: { size: 9 } } },
                         y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
                     }
                 }
@@ -557,7 +585,7 @@
             try {
                 const { error } = await _supabase.from('rondas_termica').insert([payload]);
                 if(error) throw error;
-                alert("✅ Bitácora guardada con éxito. Datos históricos listos para filtrado.");
+                alert("✅ Bitácora guardada con éxito. Listo para análisis multivariable.");
                 window.location.reload();
             } catch(e) { alert("Error: " + e.message); }
         }
