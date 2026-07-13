@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Bitácora Térmica | Análisis Multivariable</title>
+    <title>Bitácora Térmica | Control Operativo Total</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
@@ -86,16 +86,13 @@
             position: relative; height: 280px; width: 100%; margin-top: 15px; background: #0f172a; padding: 10px; border-radius: 8px; box-sizing: border-box;
         }
 
-        /* Estilos para el panel de selección múltiple */
         .grid-checkboxes {
             display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 160px; overflow-y: auto; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #334155; margin-top: 5px;
         }
         .item-checkbox {
             display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text); cursor: pointer;
         }
-        .item-checkbox input {
-            width: auto; margin: 0; transform: scale(1.2);
-        }
+        .item-checkbox input { width: auto; margin: 0; transform: scale(1.2); }
     </style>
 </head>
 <body>
@@ -127,11 +124,11 @@
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <div style="flex: 1;">
-                        <label>Fecha:</label>
+                        <label>Fecha de la Ronda:</label>
                         <input type="date" id="fecha">
                     </div>
                     <div style="flex: 1;">
-                        <label>Turno:</label>
+                        <label>Turno Asignado:</label>
                         <select id="turno">
                             <option value="7:00">🌅 Turno 07:00 AM</option>
                             <option value="19:00">🌌 Turno 19:00 PM</option>
@@ -307,9 +304,8 @@
         <!-- PESTAÑA 2: ANALÍTICA MULTIVARIABLE INTERACTIVA -->
         <div id="tab-analitica" class="tab-content">
             <div class="card">
-                <h3>📈 Análisis Predictivo Combinado</h3>
+                <h3>📈 Auditoría Operativa Temporal</h3>
                 
-                <!-- FILTRO POR FECHAS -->
                 <div style="display: flex; gap: 8px; margin-bottom: 10px;">
                     <div style="flex: 1;">
                         <label style="font-size: 11px; color: var(--text-dim);">Desde:</label>
@@ -321,9 +317,8 @@
                     </div>
                 </div>
 
-                <label style="font-size: 13px; color: var(--text-dim);">Selecciona las Variables a Cruzar:</label>
+                <label style="font-size: 13px; color: var(--text-dim);">Selecciona Variables a Cruzar:</label>
                 
-                <!-- SECTOR DE CHECKBOXES MÚLTIPLES -->
                 <div class="grid-checkboxes">
                     <label class="item-checkbox"><input type="checkbox" value="ci_presion_salida" checked> 🔥 CI: Presión Salida (PT604)</label>
                     <label class="item-checkbox"><input type="checkbox" value="ci_volt_bateria"> 🔥 CI: Voltaje Batería 1Y2</label>
@@ -342,7 +337,7 @@
                     <label class="item-checkbox"><input type="checkbox" value="bop_chgr_output_volt"> 🔋 BOP: Charger Output Volt</label>
                     <label class="item-checkbox"><input type="checkbox" value="bop_chgr_output_amp"> 🔋 BOP: Charger Output Amp</label>
                     <label class="item-checkbox"><input type="checkbox" value="sep_nivel"> 🛢️ Separador: Nivel de Aceite</label>
-                    <label class="item-checkbox"><input type="checkbox" value="trans_temp_aceite" checked> ⚡ Transf: Temperatura de Aceite</label>
+                    <label class="item-checkbox"><input type="checkbox" value="trans_temp_aceite" checked> ⚡ Transf: Temperatura Aceite</label>
                     <label class="item-checkbox"><input type="checkbox" value="trans_temp_devanado"> ⚡ Transf: Temperatura Devanado</label>
                     <label class="item-checkbox"><input type="checkbox" value="agua_presion_suministro"> 💧 Agua: Presión Suministro</label>
                     <label class="item-checkbox"><input type="checkbox" value="agua_nivel_tanque_almacen"> 💧 Agua: Nivel Tanque</label>
@@ -353,12 +348,12 @@
                     <label class="item-checkbox"><input type="checkbox" value="cg_presion_regulada"> 🎛️ City Gate: Presión Regulada</label>
                 </div>
 
-                <button class="btn-main" onclick="actualizarGraficaAnalitica()" style="margin-top: 10px; padding: 10px; font-size: 14px;">📊 Filtrar y Analizar Combinación</button>
+                <button class="btn-main" onclick="actualizarGraficaAnalitica()" style="margin-top: 10px; padding: 10px; font-size: 14px;">📊 Analizar Rango vs Hora Real</button>
 
                 <div class="contenedor-grafica"><canvas id="graficaAnalitica"></canvas></div>
             </div>
             <div class="card">
-                <h3>📋 Historial Cronológico</h3>
+                <h3>📋 Historial de Auditoría (Hora de Guardado)</h3>
                 <div id="listaRondas" style="max-height: 180px; overflow-y: auto; font-size: 13px;">Cargando...</div>
             </div>
         </div>
@@ -379,8 +374,7 @@
         let rondasCargadas = [];
         let chartAnalitico = null;
 
-        // Paleta de colores industriales de alta visibilidad para las líneas de la gráfica
-        const COLORES_LINEAS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#ec4899', '#a855f7', '#06b6d4', '#14b8a6', '#f43f5e', '#10b981', '#6366f1'];
+        const COLORES_LINEAS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#ec4899', '#a855f7', '#06b6d4', '#14b8a6', '#f43f5e', '#6366f1'];
 
         if (sessionStorage.getItem('auth_termica') === 'true') { mostrarApp(); }
 
@@ -432,7 +426,8 @@
         async function cargarDatosPlanta() {
             document.getElementById('status-cloud').innerText = "🔄 Sincronizando Red Térmica...";
             try {
-                const { data, error } = await _supabase.from('rondas_termica').select('*').order('fecha', { ascending: true }).order('turno', { ascending: true });
+                // Al ordenar por "created_at", las gráficas se trazarán en orden cronológico exacto de segundo a segundo
+                const { data, error } = await _supabase.from('rondas_termica').select('*').order('created_at', { ascending: true });
                 if(error) throw error;
                 rondasCargadas = data || [];
                 document.getElementById('status-cloud').innerText = "⚡ Central Térmica Conectada";
@@ -445,31 +440,36 @@
             const objetivo = rondasFiltradas || rondasCargadas;
             const reversadas = [...objetivo].reverse();
             
-            if(reversadas.length === 0) { contenedor.innerHTML = '<p>No hay rondas registradas en este rango de fechas.</p>'; return; }
+            if(reversadas.length === 0) { contenedor.innerHTML = '<p>No hay rondas registradas en este rango.</p>'; return; }
             reversadas.forEach(r => {
+                // Formatear la marca de tiempo de creación para auditoría operativa visible
+                const horaLocal = r.created_at ? new Date(r.created_at).toLocaleTimeString('es-CO', {hour: '2-digit', minute:'2-digit'}) : 'N/A';
                 contenedor.innerHTML += `
                     <div class="ronda-item">
-                        <b>📅 ${r.fecha} [Turno ${r.turno}]</b> - 👷 ${r.operador}<br>
+                        <b>📅 ${r.fecha} [Turno Asignado: ${r.turno}]</b><br>
+                        <span style="color:var(--success)">⏰ Registro Real Exacto: ${horaLocal}</span> | 👷 ${r.operador}<br>
                         <span style="color:var(--text-dim)">Obs: ${r.observaciones || 'Sin anomalías'}</span>
                     </div>
                 `;
             });
         }
 
-        // 🧠 INDUSTRIAL MULTILINE ENGINE - GRAFICACIÓN DE MÚLTIPLES VARIABLES EN SIMULTÁNEO
+        // 🧠 MOTOR PREDICTIVO AVANZADO CON EJE DE TIEMPO REAL (HORA EXACTA DE SUBIDA)
         function actualizarGraficaAnalitica() {
             if(rondasCargadas.length === 0) return;
             
             const desde = document.getElementById('filtro-desde').value;
             const hasta = document.getElementById('filtro-hasta').value;
             
-            // 1. Filtrar las rondas por el rango de fechas
             const rondasFiltradas = rondasCargadas.filter(r => r.fecha >= desde && r.fecha <= hasta);
             renderizarListaRondas(rondasFiltradas);
 
-            const etiquetas = rondasFiltradas.map(r => `${r.fecha.slice(5)} (${r.turno})`);
+            // Generar etiquetas en el eje X combinando fecha corta + la hora exacta en la que se grabó la información
+            const etiquetas = rondasFiltradas.map(r => {
+                const hReal = r.created_at ? new Date(r.created_at).toLocaleTimeString('es-CO', {hour: '2-digit', minute:'2-digit'}) : r.turno;
+                return `${r.fecha.slice(5)} @ ${hReal}`;
+            });
             
-            // 2. Detectar qué checkboxes están activos
             const checkboxes = document.querySelectorAll('.grid-checkboxes input[type="checkbox"]');
             let datasetsConfig = [];
             let colorIndex = 0;
@@ -487,7 +487,7 @@
                         backgroundColor: 'transparent',
                         borderWidth: 2.5,
                         pointBackgroundColor: colorLinea,
-                        pointRadius: 3,
+                        pointRadius: 3.5,
                         tension: 0.15
                     });
                     colorIndex++;
@@ -502,10 +502,7 @@
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { 
-                        legend: { 
-                            labels: { color: '#f8fafc', font: { size: 10 } },
-                            position: 'top'
-                        } 
+                        legend: { labels: { color: '#f8fafc', font: { size: 10 } }, position: 'top' } 
                     },
                     scales: {
                         x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', font: { size: 9 } } },
@@ -522,7 +519,7 @@
             const observaciones = document.getElementById('observaciones').value.trim();
 
             if(!operador) { alert("⚠️ Por favor ingresa el nombre del operador."); return; }
-            document.getElementById('status-cloud').innerText = "🚀 Guardando bloque operativo total...";
+            document.getElementById('status-cloud').innerText = "🚀 Registrando bloque y marca temporal real...";
 
             const payload = {
                 fecha, turno, operador, observaciones,
@@ -585,7 +582,7 @@
             try {
                 const { error } = await _supabase.from('rondas_termica').insert([payload]);
                 if(error) throw error;
-                alert("✅ Bitácora guardada con éxito. Listo para análisis multivariable.");
+                alert("✅ Ronda grabada con éxito. Marca de tiempo real registrada.");
                 window.location.reload();
             } catch(e) { alert("Error: " + e.message); }
         }
