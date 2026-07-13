@@ -85,7 +85,6 @@
         .contenedor-grafica {
             position: relative; height: 280px; width: 100%; margin-top: 15px; background: #0f172a; padding: 10px; border-radius: 8px; box-sizing: border-box;
         }
-
         .grid-checkboxes {
             display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 160px; overflow-y: auto; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #334155; margin-top: 5px;
         }
@@ -102,7 +101,7 @@
         <h2>⚡ CENTRAL TÉRMICA</h2>
         <p style="color: var(--text-dim); margin-bottom: 20px;">Registro Digital de Rondas Operativas</p>
         <input type="password" id="pass-input" placeholder="Código de Operación" style="text-align: center; max-width: 300px;">
-        <button class="btn-main" onclick="verificarAcceso()" style="max-width: 300px; margin-top: 15px;">Iniciar Bitácora</button>
+        <button class="btn-main" onclick="verificarAccAccess()" style="max-width: 300px; margin-top: 15px;">Iniciar Bitácora</button>
         <p id="error-msg" style="color: var(--danger); margin-top: 10px; display: none;">❌ Código incorrecto</p>
     </div>
 
@@ -146,13 +145,19 @@
                     <label>Presión Salida <span class="tag-range">[PT604] (110 - 200 PSI)</span></label>
                     <input type="number" id="ci_presion_salida" step="any" placeholder="0.0" oninput="validarRango(this, 110, 200)">
                 </div>
-                <div class="campo-grupal">
-                    <label>Volt. Batería 1Y2 <span class="tag-range">(10 - 14 VOLT)</span></label>
-                    <input type="number" id="ci_volt_bateria" step="any" placeholder="0.0" oninput="validarRango(this, 10, 14)">
+                <div style="display: flex; gap: 8px;">
+                    <div style="flex: 1;" class="campo-grupal">
+                        <label>Volt. Batería 1 <span class="tag-range">(10-14V)</span></label>
+                        <input type="number" id="ci_volt_bateria_1" step="any" placeholder="Batería 1" oninput="validarRango(this, 10, 14)">
+                    </div>
+                    <div style="flex: 1;" class="campo-grupal">
+                        <label>Volt. Batería 2 <span class="tag-range">(10-14V)</span></label>
+                        <input type="number" id="ci_volt_bateria_2" step="any" placeholder="Batería 2" oninput="validarRango(this, 10, 14)">
+                    </div>
                 </div>
                 <div class="campo-grupal">
-                    <label>Nivel TK Diesel:</label>
-                    <select id="ci_nivel_tk_diesel"><option value="MED">MED</option><option value="FULL">FULL</option><option value="LOW">LOW</option></select>
+                    <label>Nivel TK Diesel <span class="tag-range">(Valor en % de 0 a 100)</span></label>
+                    <input type="number" id="ci_nivel_tk_diesel" min="0" max="100" placeholder="Ej: 75" oninput="validarRango(this, 0, 100)">
                 </div>
                 <div class="campo-grupal">
                     <label>Nivel TK Agua <span class="tag-range">(9 - 10.5 MTS)</span></label>
@@ -248,17 +253,41 @@
             <div id="sec-agua" class="seccion-contenido">
                 <div class="campo-grupal"><label>Presión Suministro (30 - 60 PSI)</label><input type="number" id="agua_presion_suministro" step="any" oninput="validarRango(this, 30, 60)"></div>
                 <div class="campo-grupal"><label>Nivel Tanq. Almacenamiento (5 - 7.5 MTS)</label><input type="number" id="agua_nivel_tanque_almacen" step="any" oninput="validarRango(this, 5, 7.5)"></div>
-                <div class="campo-grupal"><label>Horas de Operación P. Agua (Hrs):</label><input type="number" id="agua_horas_operacion" step="any"></div>
-                <div class="campo-grupal"><label>Planta en Servicio:</label><select id="agua_planta_en_servicio"><option value="SI">SI</option><option value="NO">NO</option></select></div>
+                <div class="campo-grupal">
+                    <label>Horas de Operación (diarias) <span class="tag-range">[Formato HH:MM]</span></label>
+                    <input type="time" id="agua_horas_operacion">
+                </div>
+                <div class="campo-grupal">
+                    <label>Planta en Servicio:</label>
+                    <select id="agua_planta_en_servicio"><option value="Encendida">Encendida</option><option value="Apagada">Apagada</option></select>
+                </div>
             </div>
 
             <!-- 8. TANQUES DE COMBUSTIBLE -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-comb')">⛽ 8. Tanques de Combustible <span>▼</span></button>
             <div id="sec-comb" class="seccion-contenido">
-                <div class="campo-grupal"><label>Válvulas Alineadas:</label><select id="comb_valvulas_alineadas"><option value="SI">SI</option><option value="NO">NO</option></select></div>
-                <div class="campo-grupal"><label>Nivel Tanq. Almacenamiento:</label><select id="comb_nivel_tanque_almacen"><option value="A">A</option><option value="B">B</option></select></div>
-                <div class="campo-grupal"><label>Tanque Alineado:</label><select id="comb_tanque_alineado"><option value="SI">SI</option><option value="NO">NO</option></select></div>
-                <div class="campo-grupal"><label>Protección Catódica (Valor V):</label><input type="number" id="comb_proteccion_catodica" step="any"></div>
+                <div style="display: flex; gap: 8px;">
+                    <div style="flex: 1;" class="campo-grupal">
+                        <label>Tanque A <span class="tag-range">(Mts y Cm, ej: 6.3)</span></label>
+                        <input type="number" id="comb_nivel_tanque_a" step="0.01" placeholder="0.00">
+                    </div>
+                    <div style="flex: 1;" class="campo-grupal">
+                        <label>Tanque B <span class="tag-range">(Mts y Cm, ej: 6.3)</span></label>
+                        <input type="number" id="comb_nivel_tanque_b" step="0.01" placeholder="0.00">
+                    </div>
+                </div>
+                <div class="campo-grupal">
+                    <label>Válvulas Alineadas:</label>
+                    <select id="comb_valvulas_alineadas"><option value="SI">SI</option><option value="NO">NO</option></select>
+                </div>
+                <div class="campo-grupal">
+                    <label>Tanque Alineado:</label>
+                    <select id="comb_tanque_alineado"><option value="A">Tanque A</option><option value="B">Tanque B</option></select>
+                </div>
+                <div class="campo-grupal">
+                    <label>Protección Catódica (Valor V):</label>
+                    <input type="number" id="comb_proteccion_catodica" step="any">
+                </div>
             </div>
 
             <!-- 9. CITY GATE -->
@@ -301,11 +330,10 @@
             </div>
         </div>
 
-        <!-- PESTAÑA 2: ANALÍTICA MULTIVARIABLE INTERACTIVA -->
+        <!-- PESTAÑA 2: ANALÍTICA MULTIVARIABLE -->
         <div id="tab-analitica" class="tab-content">
             <div class="card">
                 <h3>📈 Auditoría Operativa Temporal</h3>
-                
                 <div style="display: flex; gap: 8px; margin-bottom: 10px;">
                     <div style="flex: 1;">
                         <label style="font-size: 11px; color: var(--text-dim);">Desde:</label>
@@ -318,42 +346,27 @@
                 </div>
 
                 <label style="font-size: 13px; color: var(--text-dim);">Selecciona Variables a Cruzar:</label>
-                
                 <div class="grid-checkboxes">
-                    <label class="item-checkbox"><input type="checkbox" value="ci_presion_salida" checked> 🔥 CI: Presión Salida (PT604)</label>
-                    <label class="item-checkbox"><input type="checkbox" value="ci_volt_bateria"> 🔥 CI: Voltaje Batería 1Y2</label>
-                    <label class="item-checkbox"><input type="checkbox" value="ci_nivel_tk_agua"> 🔥 CI: Nivel Tanque Agua</label>
-                    <label class="item-checkbox"><input type="checkbox" value="comp_pres_aire_tanque"> 💨 Compresor: Presión Aire Tanque</label>
-                    <label class="item-checkbox"><input type="checkbox" value="comp_pres_aire_instrumento"> 💨 Compresor: Presión Aire Inst.</label>
-                    <label class="item-checkbox"><input type="checkbox" value="comp_pres_difer_secador"> 💨 Compresor: Presión Diferencial</label>
-                    <label class="item-checkbox"><input type="checkbox" value="ccm_c11_amperimetro"> ⚡ CCM: Amperímetro C1.1</label>
-                    <label class="item-checkbox"><input type="checkbox" value="ccm_c11_voltimetro"> ⚡ CCM: Voltímetro C1.1</label>
-                    <label class="item-checkbox"><input type="checkbox" value="ccm_c21_amperimetro"> ⚡ CCM: Amperímetro C2.1</label>
-                    <label class="item-checkbox"><input type="checkbox" value="ccm_c21_voltimetro"> ⚡ CCM: Voltímetro C2.1</label>
-                    <label class="item-checkbox"><input type="checkbox" value="ccm_c31_amperimetro"> ⚡ CCM: Amperímetro C3.1</label>
-                    <label class="item-checkbox"><input type="checkbox" value="ccm_c32_voltimetro"> ⚡ CCM: Voltímetro C3.2</label>
-                    <label class="item-checkbox"><input type="checkbox" value="ccm_c32_frecuencimetro"> ⚡ CCM: Frecuencímetro C3.2</label>
-                    <label class="item-checkbox"><input type="checkbox" value="bop_main_volt"> 🔋 BOP: Main Volt</label>
-                    <label class="item-checkbox"><input type="checkbox" value="bop_chgr_output_volt"> 🔋 BOP: Charger Output Volt</label>
-                    <label class="item-checkbox"><input type="checkbox" value="bop_chgr_output_amp"> 🔋 BOP: Charger Output Amp</label>
-                    <label class="item-checkbox"><input type="checkbox" value="sep_nivel"> 🛢️ Separador: Nivel de Aceite</label>
-                    <label class="item-checkbox"><input type="checkbox" value="trans_temp_aceite" checked> ⚡ Transf: Temperatura Aceite</label>
-                    <label class="item-checkbox"><input type="checkbox" value="trans_temp_devanado"> ⚡ Transf: Temperatura Devanado</label>
-                    <label class="item-checkbox"><input type="checkbox" value="agua_presion_suministro"> 💧 Agua: Presión Suministro</label>
-                    <label class="item-checkbox"><input type="checkbox" value="agua_nivel_tanque_almacen"> 💧 Agua: Nivel Tanque</label>
-                    <label class="item-checkbox"><input type="checkbox" value="comb_proteccion_catodica"> ⛽ Combustible: Prot. Catódica</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ci_presion_salida" checked> 🔥 CI: Presión Salida</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ci_volt_bateria_1"> 🔥 CI: Voltaje Batería 1</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ci_volt_bateria_2"> 🔥 CI: Voltaje Batería 2</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ci_nivel_tk_diesel"> 🔥 CI: Nivel Diésel (%)</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ci_nivel_tk_agua"> 🔥 CI: Nivel Agua</label>
+                    <label class="item-checkbox"><input type="checkbox" value="comp_pres_aire_tanque"> 💨 Compresor: Presión Tanque</label>
+                    <label class="item-checkbox"><input type="checkbox" value="comp_pres_aire_instrumento"> 💨 Compresor: Presión Inst.</label>
+                    <label class="item-checkbox"><input type="checkbox" value="trans_temp_aceite" checked> ⚡ Transf: Temp. Aceite</label>
+                    <label class="item-checkbox"><input type="checkbox" value="trans_temp_devanado"> ⚡ Transf: Temp. Devanado</label>
+                    <label class="item-checkbox"><input type="checkbox" value="comb_nivel_tanque_a"> ⛽ Combustible: Nivel Tanque A</label>
+                    <label class="item-checkbox"><input type="checkbox" value="comb_nivel_tanque_b"> ⛽ Combustible: Nivel Tanque B</label>
                     <label class="item-checkbox"><input type="checkbox" value="cg_presion_entrada"> 🎛️ City Gate: Presión Entrada</label>
-                    <label class="item-checkbox"><input type="checkbox" value="cg_temperatura_entrada"> 🎛️ City Gate: Temp. Entrada</label>
-                    <label class="item-checkbox"><input type="checkbox" value="cg_pres_diferencial_filtro"> 🎛️ City Gate: Pres. Diferencial</label>
                     <label class="item-checkbox"><input type="checkbox" value="cg_presion_regulada"> 🎛️ City Gate: Presión Regulada</label>
                 </div>
 
                 <button class="btn-main" onclick="actualizarGraficaAnalitica()" style="margin-top: 10px; padding: 10px; font-size: 14px;">📊 Analizar Rango vs Hora Real</button>
-
                 <div class="contenedor-grafica"><canvas id="graficaAnalitica"></canvas></div>
             </div>
             <div class="card">
-                <h3>📋 Historial de Auditoría (Hora de Guardado)</h3>
+                <h3>📋 Historial de Auditoría</h3>
                 <div id="listaRondas" style="max-height: 180px; overflow-y: auto; font-size: 13px;">Cargando...</div>
             </div>
         </div>
@@ -378,7 +391,7 @@
 
         if (sessionStorage.getItem('auth_termica') === 'true') { mostrarApp(); }
 
-        function verificarAcceso() {
+        function verificarAccAccess() {
             if (document.getElementById('pass-input').value === CLAVE) {
                 sessionStorage.setItem('auth_termica', 'true'); mostrarApp();
             } else {
@@ -426,7 +439,6 @@
         async function cargarDatosPlanta() {
             document.getElementById('status-cloud').innerText = "🔄 Sincronizando Red Térmica...";
             try {
-                // Al ordenar por "created_at", las gráficas se trazarán en orden cronológico exacto de segundo a segundo
                 const { data, error } = await _supabase.from('rondas_termica').select('*').order('created_at', { ascending: true });
                 if(error) throw error;
                 rondasCargadas = data || [];
@@ -442,29 +454,25 @@
             
             if(reversadas.length === 0) { contenedor.innerHTML = '<p>No hay rondas registradas en este rango.</p>'; return; }
             reversadas.forEach(r => {
-                // Formatear la marca de tiempo de creación para auditoría operativa visible
                 const horaLocal = r.created_at ? new Date(r.created_at).toLocaleTimeString('es-CO', {hour: '2-digit', minute:'2-digit'}) : 'N/A';
                 contenedor.innerHTML += `
                     <div class="ronda-item">
-                        <b>📅 ${r.fecha} [Turno Asignado: ${r.turno}]</b><br>
-                        <span style="color:var(--success)">⏰ Registro Real Exacto: ${horaLocal}</span> | 👷 ${r.operador}<br>
+                        <b>📅 ${r.fecha} [Turno: ${r.turno}]</b><br>
+                        <span style="color:var(--success)">⏰ Registro: ${horaLocal}</span> | 👷 ${r.operador}<br>
                         <span style="color:var(--text-dim)">Obs: ${r.observaciones || 'Sin anomalías'}</span>
                     </div>
                 `;
             });
         }
 
-        // 🧠 MOTOR PREDICTIVO AVANZADO CON EJE DE TIEMPO REAL (HORA EXACTA DE SUBIDA)
         function actualizarGraficaAnalitica() {
             if(rondasCargadas.length === 0) return;
-            
             const desde = document.getElementById('filtro-desde').value;
             const hasta = document.getElementById('filtro-hasta').value;
             
             const rondasFiltradas = rondasCargadas.filter(r => r.fecha >= desde && r.fecha <= hasta);
             renderizarListaRondas(rondasFiltradas);
 
-            // Generar etiquetas en el eje X combinando fecha corta + la hora exacta en la que se grabó la información
             const etiquetas = rondasFiltradas.map(r => {
                 const hReal = r.created_at ? new Date(r.created_at).toLocaleTimeString('es-CO', {hour: '2-digit', minute:'2-digit'}) : r.turno;
                 return `${r.fecha.slice(5)} @ ${hReal}`;
@@ -482,7 +490,13 @@
 
                     datasetsConfig.push({
                         label: nombreVisible,
-                        data: rondasFiltradas.map(r => r[campo]),
+                        data: rondasFiltradas.map(r => {
+                            if(campo === 'agua_horas_operacion' && r[campo]){
+                                const [h, m] = r[campo].split(':').map(Number);
+                                return h + (m/60);
+                            }
+                            return r[campo];
+                        }),
                         borderColor: colorLinea,
                         backgroundColor: 'transparent',
                         borderWidth: 2.5,
@@ -501,9 +515,7 @@
                 data: { labels: etiquetas, datasets: datasetsConfig },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { labels: { color: '#f8fafc', font: { size: 10 } }, position: 'top' } 
-                    },
+                    plugins: { legend: { labels: { color: '#f8fafc', font: { size: 10 } }, position: 'top' } },
                     scales: {
                         x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', font: { size: 9 } } },
                         y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
@@ -519,13 +531,15 @@
             const observaciones = document.getElementById('observaciones').value.trim();
 
             if(!operador) { alert("⚠️ Por favor ingresa el nombre del operador."); return; }
-            document.getElementById('status-cloud').innerText = "🚀 Registrando bloque y marca temporal real...";
+            document.getElementById('status-cloud').innerText = "🚀 Guardando en la nube industrial...";
 
             const payload = {
                 fecha, turno, operador, observaciones,
                 ci_presion_salida: parseFloat(document.getElementById('ci_presion_salida').value) || null,
-                ci_volt_bateria: parseFloat(document.getElementById('ci_volt_bateria').value) || null,
-                ci_nivel_tk_diesel: document.getElementById('ci_nivel_tk_diesel').value,
+                ci_volt_bateria: parseFloat(document.getElementById('ci_volt_bateria_1').value) || null, // Mapeado base
+                ci_volt_bateria_1: parseFloat(document.getElementById('ci_volt_bateria_1').value) || null,
+                ci_volt_bateria_2: parseFloat(document.getElementById('ci_volt_bateria_2').value) || null,
+                ci_nivel_tk_diesel: document.getElementById('ci_nivel_tk_diesel').value, // Registra el % numérico en formato de cadena
                 ci_nivel_tk_agua: parseFloat(document.getElementById('ci_nivel_tk_agua').value) || null,
                 ci_prueba_bomba_diesel: document.getElementById('ci_prueba_bomba_diesel').value,
                 ci_sistema_disponible: document.getElementById('ci_sistema_disponible').value,
@@ -562,11 +576,13 @@
                 
                 agua_presion_suministro: parseFloat(document.getElementById('agua_presion_suministro').value) || null,
                 agua_nivel_tanque_almacen: parseFloat(document.getElementById('agua_nivel_tanque_almacen').value) || null,
-                agua_horas_operacion: parseFloat(document.getElementById('agua_horas_operacion').value) || null,
+                agua_horas_operacion: document.getElementById('agua_horas_operacion').value, // Almacena la cadena de tiempo HH:MM
                 agua_planta_en_servicio: document.getElementById('agua_planta_en_servicio').value,
                 
                 comb_valvulas_alineadas: document.getElementById('comb_valvulas_alineadas').value,
-                comb_nivel_tanque_almacen: document.getElementById('comb_nivel_tanque_almacen').value,
+                comb_nivel_tanque_almacen: document.getElementById('comb_nivel_tanque_a').value, // Compatibilidad con el esquema
+                comb_nivel_tanque_a: parseFloat(document.getElementById('comb_nivel_tanque_a').value) || null,
+                comb_nivel_tanque_b: parseFloat(document.getElementById('comb_nivel_tanque_b').value) || null,
                 comb_tanque_alineado: document.getElementById('comb_tanque_alineado').value,
                 comb_proteccion_catodica: parseFloat(document.getElementById('comb_proteccion_catodica').value) || null,
                 
@@ -582,7 +598,7 @@
             try {
                 const { error } = await _supabase.from('rondas_termica').insert([payload]);
                 if(error) throw error;
-                alert("✅ Ronda grabada con éxito. Marca de tiempo real registrada.");
+                alert("✅ Estructura operativa procesada. Ronda guardada con éxito.");
                 window.location.reload();
             } catch(e) { alert("Error: " + e.message); }
         }
