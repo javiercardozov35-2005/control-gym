@@ -242,7 +242,7 @@
             </div>
         </div>
 
-        <!-- PESTAÑA ANALÍTICA TOTALMENTE RESTAURADA -->
+        <!-- PESTAÑA ANALÍTICA -->
         <div id="tab-analitica" class="tab-content">
             <div class="card">
                 <h3>📈 Auditoría Operativa Temporal</h3>
@@ -253,17 +253,14 @@
                 
                 <label style="font-size: 13px; color: var(--text-dim);">Selecciona Variables a Cruzar:</label>
                 <div class="grid-checkboxes">
-                    <!-- 1. CI -->
                     <label class="item-checkbox"><input type="checkbox" value="ci_presion_salida" checked> 🔥 CI: Presión Salida</label>
                     <label class="item-checkbox"><input type="checkbox" value="ci_volt_bateria_1"> 🔥 CI: Volt Batería 1</label>
                     <label class="item-checkbox"><input type="checkbox" value="ci_volt_bateria_2"> 🔥 CI: Volt Batería 2</label>
                     <label class="item-checkbox"><input type="checkbox" value="ci_nivel_tk_diesel"> 🔥 CI: Nivel Diésel (%)</label>
                     <label class="item-checkbox"><input type="checkbox" value="ci_nivel_tk_agua"> 🔥 CI: Nivel Agua</label>
-                    <!-- 2. Compresor -->
                     <label class="item-checkbox"><input type="checkbox" value="comp_pres_aire_tanque"> 💨 Compresor: Presión Tanque</label>
                     <label class="item-checkbox"><input type="checkbox" value="comp_pres_aire_instrumento"> 💨 Compresor: Presión Inst.</label>
                     <label class="item-checkbox"><input type="checkbox" value="comp_pres_difer_secador"> 💨 Compresor: Presión Dif. Secador</label>
-                    <!-- 3. CCM -->
                     <label class="item-checkbox"><input type="checkbox" value="ccm_c11_amperimetro"> ⚡ CCM: Cubículo 1.1 Amp</label>
                     <label class="item-checkbox"><input type="checkbox" value="ccm_c11_voltimetro"> ⚡ CCM: Cubículo 1.1 Volt</label>
                     <label class="item-checkbox"><input type="checkbox" value="ccm_c21_amperimetro"> ⚡ CCM: Cubículo 2.1 Amp</label>
@@ -271,24 +268,18 @@
                     <label class="item-checkbox"><input type="checkbox" value="ccm_c31_amperimetro"> ⚡ CCM: Cubículo 3.1 Amp</label>
                     <label class="item-checkbox"><input type="checkbox" value="ccm_c32_voltimetro"> ⚡ CCM: Cubículo 3.2 Volt</label>
                     <label class="item-checkbox"><input type="checkbox" value="ccm_c32_frecuencimetro"> ⚡ CCM: Frecuencímetro</label>
-                    <!-- 4. BOP -->
                     <label class="item-checkbox"><input type="checkbox" value="bop_main_volt"> 🔋 BOP: Main Volt</label>
                     <label class="item-checkbox"><input type="checkbox" value="bop_chgr_output_volt"> 🔋 BOP: Chgr Output Volt</label>
                     <label class="item-checkbox"><input type="checkbox" value="bop_chgr_output_amp"> 🔋 BOP: Chgr Output Amp</label>
-                    <!-- 5. Separador -->
                     <label class="item-checkbox"><input type="checkbox" value="sep_nivel"> 🛢️ Separador: Nivel Aceite</label>
-                    <!-- 6. Transf -->
                     <label class="item-checkbox"><input type="checkbox" value="trans_temp_aceite" checked> ⚡ Transf: Temp. Aceite</label>
                     <label class="item-checkbox"><input type="checkbox" value="trans_temp_devanado"> ⚡ Transf: Temp. Devanado</label>
-                    <!-- 7. Aguas -->
                     <label class="item-checkbox"><input type="checkbox" value="agua_presion_suministro"> 💧 Aguas: Presión Suministro</label>
                     <label class="item-checkbox"><input type="checkbox" value="agua_nivel_tanque_almacen"> 💧 Aguas: Nivel Tanque</label>
                     <label class="item-checkbox"><input type="checkbox" value="agua_horas_operacion"> 💧 Aguas: Horas Diarias (Tendencia)</label>
-                    <!-- 8. Combustible -->
                     <label class="item-checkbox"><input type="checkbox" value="comb_nivel_tanque_a"> ⛽ Combustible: Nivel Tanque A</label>
                     <label class="item-checkbox"><input type="checkbox" value="comb_nivel_tanque_b"> ⛽ Combustible: Nivel Tanque B</label>
                     <label class="item-checkbox"><input type="checkbox" value="comb_proteccion_catodica"> ⛽ Combustible: Protec. Catódica</label>
-                    <!-- 9. City Gate -->
                     <label class="item-checkbox"><input type="checkbox" value="cg_presion_entrada"> 🎛️ City Gate: Presión Entrada</label>
                     <label class="item-checkbox"><input type="checkbox" value="cg_temperatura_entrada"> 🎛️ City Gate: Temp Entrada</label>
                     <label class="item-checkbox"><input type="checkbox" value="cg_pres_diferencial_filtro"> 🎛️ City Gate: Pres Dif Filtro</label>
@@ -320,14 +311,7 @@
         let chartAnalitico = null;
         let dibujoFirma = false;
 
-        const canvas = document.getElementById('canvasFirma');
-        const ctxFirma = canvas.getContext('2d');
-
-        canvas.addEventListener("touchstart", (e) => { dibujoFirma = true; ctxFirma.beginPath(); const t = e.touches[0]; ctxFirma.moveTo(t.clientX - canvas.getBoundingClientRect().left, t.clientY - canvas.getBoundingClientRect().top); });
-        canvas.addEventListener("touchmove", (e) => { if(!dibujoFirma) return; const t = e.touches[0]; ctxFirma.lineTo(t.clientX - canvas.getBoundingClientRect().left, t.clientY - canvas.getBoundingClientRect().top); ctxFirma.stroke(); });
-        canvas.addEventListener("touchend", () => dibujoFirma = false);
-
-        function limpiarFirma() { ctxFirma.clearRect(0, 0, canvas.width, canvas.height); }
+        let canvas, ctxFirma;
 
         if (sessionStorage.getItem('auth_operador')) { operadorActivo = sessionStorage.getItem('auth_operador'); mostrarApp(); }
 
@@ -344,14 +328,24 @@
             document.getElementById('contenido-app').style.display = 'block';
             document.getElementById('label-operador-activo').innerText = "👷 " + operadorActivo;
             document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+            
+            // 🔒 INICIALIZACIÓN PROTEGIDA: Solo arranca cuando la app es visible
+            canvas = document.getElementById('canvasFirma');
+            ctxFirma = canvas.getContext('2d');
             canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
             ctxFirma.strokeStyle = "#151f32"; ctxFirma.lineWidth = 2.5;
+
+            canvas.addEventListener("touchstart", (e) => { dibujoFirma = true; ctxFirma.beginPath(); const t = e.touches[0]; ctxFirma.moveTo(t.clientX - canvas.getBoundingClientRect().left, t.clientY - canvas.getBoundingClientRect().top); });
+            canvas.addEventListener("touchmove", (e) => { if(!dibujoFirma) return; const t = e.touches[0]; ctxFirma.lineTo(t.clientX - canvas.getBoundingClientRect().left, t.clientY - canvas.getBoundingClientRect().top); ctxFirma.stroke(); });
+            canvas.addEventListener("touchend", () => dibujoFirma = false);
+
             const hoy = new Date(); const hace7Dias = new Date(); hace7Dias.setDate(hoy.getDate() - 7);
             document.getElementById('filtro-desde').value = hace7Dias.toISOString().split('T')[0];
             document.getElementById('filtro-hasta').value = hoy.toISOString().split('T')[0];
             cargarDatosPlanta();
         }
 
+        function limpiarFirma() { ctxFirma.clearRect(0, 0, canvas.width, canvas.height); }
         function cerrarSesion() { sessionStorage.removeItem('auth_operador'); window.location.reload(); }
         function toggleSeccion(id) { const sec = document.getElementById(id); sec.style.display = (sec.style.display === 'block') ? 'none' : 'block'; }
         
@@ -369,15 +363,21 @@
         }
 
         async function cargarDatosPlanta() {
+            document.getElementById('status-cloud').innerText = "🔄 Sincronizando Red Térmica...";
             try {
                 const { data, error } = await _supabase.from('rondas_termica').select('*').order('created_at', { ascending: true });
-                if(!error) { rondasCargadas = data || []; renderizarListaRondas(); }
-            } catch(e){}
+                if(!error) { 
+                    rondasCargadas = data || []; 
+                    document.getElementById('status-cloud').innerText = "⚡ Red Termodorada Conectada";
+                    renderizarListaRondas(); 
+                }
+            } catch(e){ document.getElementById('status-cloud').innerText = "❌ Error de sincronización"; }
         }
 
         function renderizarListaRondas(filtradas) {
             const contenedor = document.getElementById('listaRondas'); contenedor.innerHTML = '';
             const obj = filtradas || rondasCargadas; const rev = [...obj].reverse();
+            if(rev.length === 0) { contenedor.innerHTML = '<p>No hay registros.</p>'; return; }
             rev.forEach(r => {
                 const h = r.created_at ? new Date(r.created_at).toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}) : 'N/A';
                 contenedor.innerHTML += `<div class="ronda-item"><b>📅 ${r.fecha}</b> | Real: ${h}<br><span style="color:var(--accent)">👷 ${r.operador}</span> (GPS: ${r.latitud || 'N/A'})</div>`;
@@ -413,7 +413,6 @@
                 fecha, turno, operador: operadorActivo, latitud: lat, longitud: lon, firma_base64: firma,
                 observaciones: document.getElementById('observaciones').value,
                 
-                // 1. Contra-Incendio
                 ci_presion_salida: parseFloat(document.getElementById('ci_presion_salida').value) || null,
                 ci_volt_bateria_1: parseFloat(document.getElementById('ci_volt_bateria_1').value) || null,
                 ci_volt_bateria_2: parseFloat(document.getElementById('ci_volt_bateria_2').value) || null,
@@ -422,13 +421,11 @@
                 ci_prueba_bomba_diesel: document.getElementById('ci_prueba_bomba_diesel').value,
                 ci_sistema_disponible: document.getElementById('ci_sistema_disponible').value,
                 
-                // 2. Compresor
                 comp_pres_aire_tanque: parseFloat(document.getElementById('comp_pres_aire_tanque').value) || null,
                 comp_pres_aire_instrumento: parseFloat(document.getElementById('comp_pres_aire_instrumento').value) || null,
                 comp_pres_difer_secador: parseFloat(document.getElementById('comp_pres_difer_secador').value) || null,
                 comp_sistema_disponible: document.getElementById('comp_sistema_disponible').value,
                 
-                // 3. CCM 480V
                 ccm_c11_amperimetro: parseFloat(document.getElementById('ccm_c11_amperimetro').value) || null,
                 ccm_c11_voltimetro: parseFloat(document.getElementById('ccm_c11_voltimetro').value) || null,
                 ccm_c12_estado: document.getElementById('ccm_c12_estado').value,
@@ -442,7 +439,6 @@
                 ccm_c32_frecuencimetro: parseFloat(document.getElementById('ccm_c32_frecuencimetro').value) || null,
                 ccm_prueba_diesel_bop: document.getElementById('ccm_prueba_diesel_bop').value,
                 
-                // 4. BOP Cargador
                 bop_main_volt: parseFloat(document.getElementById('bop_main_volt').value) || null,
                 bop_chgr_output_volt: parseFloat(document.getElementById('bop_chgr_output_volt').value) || null,
                 bop_chgr_output_amp: parseFloat(document.getElementById('bop_chgr_output_amp').value) || null,
@@ -451,34 +447,27 @@
                 bop_nivel_baterias: document.getElementById('bop_nivel_baterias').value,
                 bop_sistema_ccm_disponible: document.getElementById('bop_sistema_ccm_disponible').value,
                 
-                // 5. Separador Aceite
                 sep_nivel: parseFloat(document.getElementById('sep_nivel').value) || null,
-                
-                // 6. Transformador
                 trans_temp_aceite: parseFloat(document.getElementById('trans_temp_aceite').value) || null,
                 trans_temp_devanado: parseFloat(document.getElementById('trans_temp_devanado').value) || null,
                 
-                // 7. Planta Aguas
                 agua_presion_suministro: parseFloat(document.getElementById('agua_presion_suministro').value) || null,
                 agua_nivel_tanque_almacen: parseFloat(document.getElementById('agua_nivel_tanque_almacen').value) || null,
                 agua_horas_operacion: stringHorasAgua,
                 agua_planta_en_servicio: document.getElementById('agua_planta_en_servicio').value,
                 
-                // 8. Combustible
                 comb_nivel_tanque_a: parseFloat(document.getElementById('comb_nivel_tanque_a').value) || null,
                 comb_nivel_tanque_b: parseFloat(document.getElementById('comb_nivel_tanque_b').value) || null,
                 comb_tanque_alineado: document.getElementById('comb_tanque_alineado').value,
                 comb_valvulas_alineadas: document.getElementById('comb_valvulas_alineadas').value,
                 comb_proteccion_catodica: parseFloat(document.getElementById('comb_proteccion_catodica').value) || null,
                 
-                // 9. City Gate
                 cg_presion_entrada: parseFloat(document.getElementById('cg_presion_entrada').value) || null,
                 cg_temperatura_entrada: parseFloat(document.getElementById('cg_temperatura_entrada').value) || null,
                 cg_pres_diferencial_filtro: parseFloat(document.getElementById('cg_pres_diferencial_filtro').value) || null,
                 cg_presion_regulada: parseFloat(document.getElementById('cg_presion_regulada').value) || null,
                 cg_sistema_disponible: document.getElementById('cg_sistema_disponible').value,
                 
-                // 10. Aires
                 aa_turbogrupo: document.getElementById('aa_turbogrupo').value,
                 aa_bop: document.getElementById('aa_bop').value
             };
