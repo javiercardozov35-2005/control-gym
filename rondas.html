@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Bitácora Térmica | Control y Predicción Complete</title>
+    <title>Bitácora Térmica | Análisis Predictivo Avanzado</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
@@ -129,7 +129,7 @@
                 </div>
             </div>
 
-            <h3 style="margin-top: 15px; color: var(--text-dim); font-size: 14px; text-transform: uppercase;">Sistemas Completos de Planta</h3>
+            <h3 style="margin-top: 15px; color: var(--text-dim); font-size: 14px; text-transform: uppercase;">Sistemas de Planta</h3>
 
             <!-- 1. SISTEMA CONTRA-INCENDIO -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-ci')">🔥 1. Sistema Contra-Incendio <span>▼</span></button>
@@ -293,20 +293,59 @@
             </div>
         </div>
 
-        <!-- PESTAÑA 2: ANALÍTICA -->
+        <!-- PESTAÑA 2: ANALÍTICA INTERACTIVA AVANZADA -->
         <div id="tab-analitica" class="tab-content">
             <div class="card">
-                <h3>📈 Monitor de Tendencia Predictiva</h3>
-                <label>Conjunto de Variables a Monitorear:</label>
-                <select id="selector-conjunto" onchange="actualizarGraficaAnalitica()">
-                    <option value="presiones">🔥 Presiones Críticas (CI y Compresor)</option>
-                    <option value="temperaturas">🌡️ Temperaturas (Transformador Principal)</option>
-                    <option value="citygate">🎛️ Parámetros de Presión City Gate</option>
+                <h3>📈 Monitor Predictivo Avanzado</h3>
+                
+                <!-- FILTRO POR FECHAS -->
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; color: var(--text-dim);">Desde:</label>
+                        <input type="date" id="filtro-desde" style="padding: 8px; font-size: 14px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; color: var(--text-dim);">Hasta:</label>
+                        <input type="date" id="filtro-hasta" style="padding: 8px; font-size: 14px;">
+                    </div>
+                </div>
+
+                <label>Selecciona Variable Específica:</label>
+                <select id="selector-variable-unica" onchange="actualizarGraficaAnalitica()">
+                    <option value="ci_presion_salida">🔥 CI: Presión Salida (PT604)</option>
+                    <option value="ci_volt_bateria">🔥 CI: Voltaje Batería 1Y2</option>
+                    <option value="ci_nivel_tk_agua">🔥 CI: Nivel Tanque Agua</option>
+                    <option value="comp_pres_aire_tanque">💨 Compresor: Presión Aire Tanque (PG501)</option>
+                    <option value="comp_pres_aire_instrumento">💨 Compresor: Presión Aire Instrumento (PT503)</option>
+                    <option value="comp_pres_difer_secador">💨 Compresor: Presión Diferencial Secador</option>
+                    <option value="ccm_c11_amperimetro">⚡ CCM: Amperímetro C1.1</option>
+                    <option value="ccm_c11_voltimetro">⚡ CCM: Voltímetro C1.1</option>
+                    <option value="ccm_c21_amperimetro">⚡ CCM: Amperímetro C2.1</option>
+                    <option value="ccm_c21_voltimetro">⚡ CCM: Voltímetro C2.1</option>
+                    <option value="ccm_c31_amperimetro">⚡ CCM: Amperímetro C3.1</option>
+                    <option value="ccm_c32_voltimetro">⚡ CCM: Voltímetro C3.2</option>
+                    <option value="ccm_c32_frecuencimetro">⚡ CCM: Frecuencímetro C3.2</option>
+                    <option value="bop_main_volt">🔋 BOP: Main Volt</option>
+                    <option value="bop_chgr_output_volt">🔋 BOP: Charger Output Volt</option>
+                    <option value="bop_chgr_output_amp">🔋 BOP: Charger Output Amp</option>
+                    <option value="sep_nivel">🛢️ Separador: Nivel de Aceite</option>
+                    <option value="trans_temp_aceite">⚡ Transf: Temperatura de Aceite</option>
+                    <option value="trans_temp_devanado">⚡ Transf: Temperatura de Devanado</option>
+                    <option value="agua_presion_suministro">💧 Agua: Presión Suministro</option>
+                    <option value="agua_nivel_tanque_almacen">💧 Agua: Nivel Tanque Almacenamiento</option>
+                    <option value="comb_proteccion_catodica">⛽ Combustible: Protección Catódica (V)</option>
+                    <option value="cg_presion_entrada">🎛️ City Gate: Presión Entrada (PT-1)</option>
+                    <option value="cg_temperatura_entrada">🎛️ City Gate: Temperatura Entrada (TT-1)</option>
+                    <option value="cg_pres_diferencial_filtro">🎛️ City Gate: Presión Diferencial Filtro</option>
+                    <option value="cg_presion_regulada">🎛️ City Gate: Presión Regulada (PT-3)</option>
                 </select>
+
+                <button class="btn-main" onclick="actualizarGraficaAnalitica()" style="margin-top: 5px; padding: 10px; font-size: 14px;">📊 Filtrar y Analizar Rango</button>
+
                 <div class="contenedor-grafica"><canvas id="graficaAnalitica"></canvas></div>
             </div>
             <div class="card">
-                <h3>📋 Últimos Registros</h3>
+                <h3>📋 Historial Cronológico Filtrado</h3>
                 <div id="listaRondas" style="max-height: 200px; overflow-y: auto; font-size: 13px;">Cargando...</div>
             </div>
         </div>
@@ -341,9 +380,19 @@
             document.getElementById('pantalla-bloqueo').style.display = 'none';
             document.getElementById('contenido-app').style.display = 'block';
             document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+            establecerFechasFiltro();
             cargarDatosPlanta();
         }
         function cerrarSesion() { sessionStorage.removeItem('auth_termica'); window.location.reload(); }
+
+        function establecerFechasFiltro() {
+            const hoy = new Date();
+            const hace7Dias = new Date();
+            hace7Dias.setDate(hoy.getDate() - 7);
+            
+            document.getElementById('filtro-desde').value = hace7Dias.toISOString().split('T')[0];
+            document.getElementById('filtro-hasta').value = hoy.toISOString().split('T')[0];
+        }
 
         function toggleSeccion(id) {
             const sec = document.getElementById(id);
@@ -376,10 +425,12 @@
             } catch (e) { document.getElementById('status-cloud').innerText = "❌ Error de Red"; }
         }
 
-        function renderizarListaRondas() {
+        function renderizarListaRondas(rondasFiltradas) {
             const contenedor = document.getElementById('listaRondas'); contenedor.innerHTML = '';
-            const reversadas = [...rondasCargadas].reverse();
-            if(reversadas.length === 0) { contenedor.innerHTML = '<p>No hay rondas.</p>'; return; }
+            const objetivo = rondasFiltradas || rondasCargadas;
+            const reversadas = [...objetivo].reverse();
+            
+            if(reversadas.length === 0) { contenedor.innerHTML = '<p>No hay rondas registradas en este rango de fechas.</p>'; return; }
             reversadas.forEach(r => {
                 contenedor.innerHTML += `
                     <div class="ronda-item">
@@ -390,35 +441,41 @@
             });
         }
 
+        // 🧠 MOTOR PREDICTIVO CON FILTRO DE FECHAS SELECCIONABLES
         function actualizarGraficaAnalitica() {
             if(rondasCargadas.length === 0) return;
-            const conjunto = document.getElementById('selector-conjunto').value;
-            const etiquetas = rondasCargadas.map(r => `${r.fecha.slice(5)} (${r.turno})`);
-            let datasetsConfig = [];
+            
+            const desde = document.getElementById('filtro-desde').value;
+            const hasta = document.getElementById('filtro-hasta').value;
+            const campoSeleccionado = document.getElementById('selector-variable-unica').value;
+            const selectElement = document.getElementById('selector-variable-unica');
+            const nombreLegibleVariable = selectElement.options[selectElement.selectedIndex].text;
+            
+            // Filtrar matemáticamente el array en base a las fechas seleccionadas
+            const rondasFiltradas = rondasCargadas.filter(r => r.fecha >= desde && r.fecha <= hasta);
+            
+            renderizarListaRondas(rondasFiltradas);
 
-            if (conjunto === 'presiones') {
-                datasetsConfig = [
-                    { label: 'CI Presión Salida (PSI)', data: rondasCargadas.map(r => r.ci_presion_salida), borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', tension: 0.2 },
-                    { label: 'Comp. Presión Tanque (PSI)', data: rondasCargadas.map(r => r.comp_pres_aire_tanque), borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', tension: 0.2 },
-                    { label: 'Comp. Presión Instrumento (PSI)', data: rondasCargadas.map(r => r.comp_pres_aire_instrumento), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.2 }
-                ];
-            } else if (conjunto === 'temperaturas') {
-                datasetsConfig = [
-                    { label: 'Temp. Aceite (°C)', data: rondasCargadas.map(r => r.trans_temp_aceite), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.2 },
-                    { label: 'Temp. Devanado (°C)', data: rondasCargadas.map(r => r.trans_temp_devanado), borderColor: '#ec4899', backgroundColor: 'rgba(236, 72, 153, 0.1)', tension: 0.2 }
-                ];
-            } else if (conjunto === 'citygate') {
-                datasetsConfig = [
-                    { label: 'CG Presión Entrada (PSI)', data: rondasCargadas.map(r => r.cg_presion_entrada), borderColor: '#a855f7', backgroundColor: 'rgba(168, 85, 247, 0.1)', tension: 0.2 },
-                    { label: 'CG Presión Regulada (PSI)', data: rondasCargadas.map(r => r.cg_presion_regulada), borderColor: '#06b6d4', backgroundColor: 'rgba(6, 182, 212, 0.1)', tension: 0.2 }
-                ];
-            }
+            const etiquetas = rondasFiltradas.map(r => `${r.fecha.slice(5)} (${r.turno})`);
+            const datosExtraidos = rondasFiltradas.map(r => r[campoSeleccionado]);
 
             if(chartAnalitico) chartAnalitico.destroy();
             const ctx = document.getElementById('graficaAnalitica').getContext('2d');
             chartAnalitico = new Chart(ctx, {
                 type: 'line',
-                data: { labels: etiquetas, datasets: datasetsConfig },
+                data: {
+                    labels: etiquetas,
+                    datasets: [{
+                        label: nombreLegibleVariable,
+                        data: datosExtraidos,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ef4444',
+                        pointRadius: 4,
+                        tension: 0.15
+                    }]
+                },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { labels: { color: '#f8fafc', font: { size: 11 } } } },
@@ -437,7 +494,7 @@
             const observaciones = document.getElementById('observaciones').value.trim();
 
             if(!operador) { alert("⚠️ Por favor ingresa el nombre del operador."); return; }
-            document.getElementById('status-cloud').innerText = "🚀 Guardando todos los bloques...";
+            document.getElementById('status-cloud').innerText = "🚀 Guardando bloque operativo total...";
 
             const payload = {
                 fecha, turno, operador, observaciones,
@@ -500,7 +557,7 @@
             try {
                 const { error } = await _supabase.from('rondas_termica').insert([payload]);
                 if(error) throw error;
-                alert("✅ ¡Perfecto! Los 10 sistemas de la ronda fueron sincronizados correctamente.");
+                alert("✅ Bitácora guardada con éxito. Datos históricos listos para filtrado.");
                 window.location.reload();
             } catch(e) { alert("Error: " + e.message); }
         }
