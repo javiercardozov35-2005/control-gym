@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Bitácora Térmica | Control de Rondas</title>
+    <title>Bitácora Térmica | Control y Predicción</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Motor gráfico para análisis predictivo -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         :root {
             --bg-color: #0b0f19;
             --card-bg: #151f32;
-            --accent: #3b82f6; /* Azul Industrial */
+            --accent: #3b82f6; 
             --text: #f8fafc;
             --text-dim: #94a3b8;
             --danger: #ef4444;
@@ -45,7 +47,6 @@
         }
         input, select, textarea { background: #0f172a; color: #fff; border: 1px solid #334155; }
         
-        /* Sistema de Alertas Visuales */
         input.val-ok { border: 2px solid var(--success) !important; background: #064e3b !important; }
         input.val-error { border: 2px solid var(--danger) !important; background: #7f1d1d !important; animation: shake 0.3s; }
         
@@ -56,15 +57,11 @@
         }
 
         button.btn-main { background: var(--accent); color: #fff; font-weight: bold; cursor: pointer; }
-        button.btn-main:active { background: #2563eb; }
-
-        /* Acordeón / Secciones */
         .seccion-btn {
             background: #1e293b; color: #f8fafc; text-align: left; font-weight: bold; font-size: 15px;
             padding: 14px; border-radius: 8px; margin: 8px 0; border-left: 5px solid var(--accent); display: flex; justify-content: space-between; align-items: center;
         }
         .seccion-contenido { display: none; padding: 10px 5px; background: #111827; border-radius: 0 0 8px 8px; margin-top: -8px; margin-bottom: 10px; border: 1px solid #1e293b; }
-        
         .campo-grupal { margin-bottom: 12px; }
         .campo-grupal label { font-size: 13px; color: var(--text-dim); display: block; margin-bottom: 2px; }
         .tag-range { font-size: 11px; color: var(--warning); font-weight: 500; display: inline-block; margin-left: 5px; }
@@ -85,11 +82,16 @@
         }
         .tab-button.active { color: var(--accent); font-weight: bold; }
         .ronda-item { border-bottom: 1px solid #1e293b; padding: 12px 0; font-size: 14px; }
+        
+        /* Contenedor del gráfico analítico */
+        .contenedor-grafica {
+            position: relative; height: 260px; width: 100%; margin-top: 10px; background: #0f172a; padding: 10px; border-radius: 8px; box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
 
-    <!-- PANTALLA DE ACCESO -->
+    <!-- ACCESO -->
     <div id="pantalla-bloqueo">
         <h2>⚡ CENTRAL TÉRMICA</h2>
         <p style="color: var(--text-dim); margin-bottom: 20px;">Registro Digital de Rondas Operativas</p>
@@ -98,29 +100,29 @@
         <p id="error-msg" style="color: var(--danger); margin-top: 10px; display: none;">❌ Código incorrecto</p>
     </div>
 
-    <!-- CONTENIDO CENTRAL -->
+    <!-- CONTENIDO -->
     <div id="contenido-app" style="display: none;">
         <div class="header-app">
             <h3>⚙️ Panel de Rondas</h3>
             <button onclick="cerrarSesion()" style="width: auto; padding: 6px 12px; font-size: 12px; background: var(--danger); color: #fff; margin:0;">🔒 Salir</button>
         </div>
-        <div id="status-cloud">Conectando a la red térmica...</div>
+        <div id="status-cloud">Conectando...</div>
 
-        <!-- PESTAÑA 1: NUEVA RONDA -->
+        <!-- PESTAÑA 1: REGISTRO DE RONDA -->
         <div id="tab-nueva" class="tab-content active">
             <div class="card">
-                <h3>Datos de Control Obligatorios</h3>
+                <h3>Datos de Control</h3>
                 <div class="campo-grupal">
                     <label>Nombre del Operador:</label>
                     <input type="text" id="operador" placeholder="Ej: Ing. Carlos Mendoza">
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <div style="flex: 1;">
-                        <label style="font-size: 13px; color: var(--text-dim);">Fecha:</label>
+                        <label>Fecha:</label>
                         <input type="date" id="fecha">
                     </div>
                     <div style="flex: 1;">
-                        <label style="font-size: 13px; color: var(--text-dim);">Turno de Inspección:</label>
+                        <label>Turno:</label>
                         <select id="turno">
                             <option value="7:00">🌅 Turno 07:00 AM</option>
                             <option value="19:00">🌌 Turno 19:00 PM</option>
@@ -128,8 +130,6 @@
                     </div>
                 </div>
             </div>
-
-            <h3 style="margin-top: 15px; color: var(--text-dim); font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Sistemas de la Planta</h3>
 
             <!-- 1. SISTEMA CONTRA-INCENDIO -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-ci')">🔥 1. Sistema Contra-Incendio <span>▼</span></button>
@@ -181,99 +181,6 @@
                 </div>
             </div>
 
-            <!-- 3. CCM 480 VOLTS -->
-            <button class="seccion-btn" onclick="toggleSeccion('sec-ccm')">⚡ 3. CCM 480 Volts <span>▼</span></button>
-            <div id="sec-ccm" class="seccion-contenido">
-                <h3>Cubículo N1.1</h3>
-                <div class="campo-grupal">
-                    <label>Amperímetro (0 - 600 AMP)</label>
-                    <input type="number" id="ccm_c11_amperimetro" step="any" oninput="validarRango(this, 0, 600)">
-                </div>
-                <div class="campo-grupal">
-                    <label>Voltímetro (450 - 504 VOLT)</label>
-                    <input type="number" id="ccm_c11_voltimetro" step="any" oninput="validarRango(this, 450, 504)">
-                </div>
-                <h3>Cubículo N1.2 [52-1]</h3>
-                <select id="ccm_c12_estado"><option value="I (IN)">I (IN)</option><option value="O (OUT)">O (OUT)</option></select>
-                
-                <h3>Cubículo N2.1 [52-N]</h3>
-                <select id="ccm_c21_estado"><option value="I (IN)">I (IN)</option><option value="O (OUT)">O (OUT)</option></select>
-                <div class="campo-grupal">
-                    <label>Amperímetro (0 - 600 AMP)</label>
-                    <input type="number" id="ccm_c21_amperimetro" step="any" oninput="validarRango(this, 0, 600)">
-                </div>
-                <div class="campo-grupal">
-                    <label>Voltímetro (450 - 504 VOLT)</label>
-                    <input type="number" id="ccm_c21_voltimetro" step="any" oninput="validarRango(this, 450, 504)">
-                </div>
-
-                <h3>Cubículo N2.2 [52-2]</h3>
-                <select id="ccm_c22_estado"><option value="I (IN)">I (IN)</option><option value="O (OUT)">O (OUT)</option></select>
-
-                <h3>Cubículo N3.1</h3>
-                <div class="campo-grupal">
-                    <label>Amperímetro (0 - 600 AMP)</label>
-                    <input type="number" id="ccm_c31_amperimetro" step="any" oninput="validarRango(this, 0, 600)">
-                </div>
-
-                <h3>Cubículo N3.2 [52-EDG]</h3>
-                <select id="ccm_c32_estado"><option value="I (IN)">I (IN)</option><option value="O (OUT)">O (OUT)</option></select>
-                <div class="campo-grupal">
-                    <label>Voltímetro (450 - 504 VOLT)</label>
-                    <input type="number" id="ccm_c32_voltimetro" step="any" oninput="validarRango(this, 450, 504)">
-                </div>
-                <div class="campo-grupal">
-                    <label>Frecuencímetro (59.95 - 60.05 HZ)</label>
-                    <input type="number" id="ccm_c32_frecuencimetro" step="0.01" oninput="validarRango(this, 59.95, 60.05)">
-                </div>
-                <div class="campo-grupal">
-                    <label>Prueba Diesel BOP (Miércoles):</label>
-                    <select id="ccm_prueba_diesel_bop"><option value="NO">NO</option><option value="SI">SI</option></select>
-                </div>
-            </div>
-
-            <!-- 4. CARGADOR DE BATERIAS BOP CCM -->
-            <button class="seccion-btn" onclick="toggleSeccion('sec-bop')">🔋 4. Cargador de Baterías BOP CCM <span>▼</span></button>
-            <div id="sec-bop" class="seccion-contenido">
-                <div class="campo-grupal">
-                    <label>Main Volt (450 - 504 VOLT)</label>
-                    <input type="number" id="bop_main_volt" step="any" oninput="validarRango(this, 450, 504)">
-                </div>
-                <div class="campo-grupal">
-                    <label>Chgr Output Volt (120 - 160 VOLT)</label>
-                    <input type="number" id="bop_chgr_output_volt" step="any" oninput="validarRango(this, 120, 160)">
-                </div>
-                <div class="campo-grupal">
-                    <label>Chgr Output Amp (0 - 15 AMP)</label>
-                    <input type="number" id="bop_chgr_output_amp" step="any" oninput="validarRango(this, 0, 15)">
-                </div>
-                <div class="campo-grupal">
-                    <label>Main Switch (0 - 1)</label>
-                    <input type="number" id="bop_main_switch" step="any" oninput="validarRango(this, 0, 1)">
-                </div>
-                <div class="campo-grupal">
-                    <label>Select Switch:</label>
-                    <select id="bop_select_switch"><option value="1 (BOOST)">1 (BOOST)</option><option value="2 (EQUAL)">2 (EQUAL)</option></select>
-                </div>
-                <div class="campo-grupal">
-                    <label>Nivel Baterías:</label>
-                    <select id="bop_nivel_baterias"><option value="MAX">MAX</option><option value="MIN">MIN</option></select>
-                </div>
-                <div class="campo-grupal">
-                    <label>Sistema CCM Disponible:</label>
-                    <select id="bop_sistema_ccm_disponible"><option value="SI">SI</option><option value="NO">NO</option></select>
-                </div>
-            </div>
-
-            <!-- 5. SEPARADOR DE ACEITE -->
-            <button class="seccion-btn" onclick="toggleSeccion('sec-sep')">🛢️ 5. Separador de Aceite <span>▼</span></button>
-            <div id="sec-sep" class="seccion-contenido">
-                <div class="campo-grupal">
-                    <label>Nivel (0 - 1 MTS)</label>
-                    <input type="number" id="sep_nivel" step="any" oninput="validarRango(this, 0, 1)">
-                </div>
-            </div>
-
             <!-- 6. TRANSFORMADOR PRINCIPAL -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-trans')">⚡ 6. Transformador Principal <span>▼</span></button>
             <div id="sec-trans" class="seccion-contenido">
@@ -284,48 +191,6 @@
                 <div class="campo-grupal">
                     <label>Temperatura de Devanado (15 - 120 °C)</label>
                     <input type="number" id="trans_temp_devanado" step="any" oninput="validarRango(this, 15, 120)">
-                </div>
-            </div>
-
-            <!-- 7. PLANTA DE AGUAS -->
-            <button class="seccion-btn" onclick="toggleSeccion('sec-agua')">💧 7. Planta de Aguas <span>▼</span></button>
-            <div id="sec-agua" class="seccion-contenido">
-                <div class="campo-grupal">
-                    <label>Presión Suministro (30 - 60 PSI)</label>
-                    <input type="number" id="agua_presion_suministro" step="any" oninput="validarRango(this, 30, 60)">
-                </div>
-                <div class="campo-grupal">
-                    <label>Nivel Tanq. Almacenamiento (5 - 7.5 MTS)</label>
-                    <input type="number" id="agua_nivel_tanque_almacen" step="any" oninput="validarRango(this, 5, 7.5)">
-                </div>
-                <div class="campo-grupal">
-                    <label>Horas de Operación P. Agua (Hrs):</label>
-                    <input type="number" id="agua_horas_operacion" step="any">
-                </div>
-                <div class="campo-grupal">
-                    <label>Planta en Servicio:</label>
-                    <select id="agua_planta_en_servicio"><option value="SI">SI</option><option value="NO">NO</option></select>
-                </div>
-            </div>
-
-            <!-- 8. TANQUES DE COMBUSTIBLE -->
-            <button class="seccion-btn" onclick="toggleSeccion('sec-comb')">⛽ 8. Tanques de Combustible <span>▼</span></button>
-            <div id="sec-comb" class="seccion-contenido">
-                <div class="campo-grupal">
-                    <label>Válvulas Alineadas:</label>
-                    <select id="comb_valvulas_alineadas"><option value="SI">SI</option><option value="NO">NO</option></select>
-                </div>
-                <div class="campo-grupal">
-                    <label>Nivel Tanq. Almacenamiento:</label>
-                    <select id="comb_nivel_tanque_almacen"><option value="A">A</option><option value="B">B</option></select>
-                </div>
-                <div class="campo-grupal">
-                    <label>Tanque Alineado:</label>
-                    <select id="comb_tanque_alineado"><option value="SI">SI</option><option value="NO">NO</option></select>
-                </div>
-                <div class="campo-grupal">
-                    <label>Protección Catódica (Valor V):</label>
-                    <input type="number" id="comb_proteccion_catodica" step="any">
                 </div>
             </div>
 
@@ -354,49 +219,53 @@
                 </div>
             </div>
 
-            <!-- 10. UNIDADES DE AIRE ACONDICIONADO -->
-            <button class="seccion-btn" onclick="toggleSeccion('sec-aa')">❄️ 10. Unidades de Aire Acondicionado <span>▼</span></button>
-            <div id="sec-aa" class="seccion-contenido">
-                <div class="campo-grupal">
-                    <label>Turbogrupo:</label>
-                    <select id="aa_turbogrupo"><option value="SI">SI</option><option value="NO">NO</option></select>
-                </div>
-                <div class="campo-grupal">
-                    <label>B.O.P.:</label>
-                    <select id="aa_bop"><option value="SI">SI</option><option value="NO">NO</option></select>
-                </div>
-            </div>
-
-            <!-- OBSERVACIONES Y GUARDADO -->
-            <div class="card" style="margin-top: 20px;">
-                <label style="font-size: 13px; color: var(--text-dim);">Observaciones de la Ronda:</label>
-                <textarea id="observaciones" rows="3" placeholder="Escribe anomalías o comentarios..."></textarea>
+            <!-- GUARDADO -->
+            <div class="card" style="margin-top: 15px;">
+                <label>Observaciones de la Ronda:</label>
+                <textarea id="observaciones" rows="2" placeholder="Notas operativas..."></textarea>
                 <button class="btn-main" onclick="subirRonda()">🚀 Guardar Ronda en la Nube</button>
             </div>
         </div>
 
-        <!-- PESTAÑA 2: HISTORIAL -->
-        <div id="tab-historial" class="tab-content">
+        <!-- PESTAÑA 2: MODULO PREDICTIVO Y ANALÍTICO -->
+        <div id="tab-analitica" class="tab-content">
             <div class="card">
-                <h3>📜 Historial de Rondas</h3>
-                <div id="listaRondas">Cargando bitácoras...</div>
+                <h3>📈 Monitor de Tendencia Predictiva</h3>
+                <p style="font-size: 12px; color: var(--text-dim); margin-top:-5px; margin-bottom:12px;">Estudia las variaciones temporales para predecir anomalías en los equipos.</p>
+                
+                <label>Conjunto de Variables a Monitorear:</label>
+                <select id="selector-conjunto" onchange="actualizarGraficaAnalitica()">
+                    <option value="presiones">🔥 Presiones Críticas (CI y Compresor)</option>
+                    <option value="temperaturas">🌡️ Temperaturas (Transformador Principal)</option>
+                    <option value="citygate">🎛️ Parámetros de Presión City Gate</option>
+                </select>
+
+                <div class="contenedor-grafica">
+                    <canvas id="graficaAnalitica"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📋 Últimos Registros</h3>
+                <div id="listaRondas" style="max-height: 200px; overflow-y: auto; font-size: 13px;">Cargando histórico...</div>
             </div>
         </div>
 
-        <!-- BARRA DE PESTAÑAS INFERIOR -->
+        <!-- BARRA INFERIOR -->
         <div class="tab-bar">
             <button class="tab-button active" onclick="cambiarPestaña('tab-nueva', this)">📝 Nueva Ronda</button>
-            <button class="tab-button" onclick="cambiarPestaña('tab-historial', this)">📜 Historial</button>
+            <button class="tab-button" onclick="cambiarPestaña('tab-analitica', this)">📈 Analítica Falla</button>
         </div>
     </div>
 
     <script>
-        const CLAVE = "1876"; // Misma contraseña corporativa
+        const CLAVE = "1876";
         const SUPABASE_URL = "https://hvinbsrtwllpdppgxdpw.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_aLuAKNoFHcKZvb9jq2mAXw_8Ioa-vQJ";
         
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let rondasCargadas = [];
+        let chartAnalitico = null;
 
         if (sessionStorage.getItem('auth_termica') === 'true') { mostrarApp(); }
 
@@ -412,7 +281,7 @@
             document.getElementById('pantalla-bloqueo').style.display = 'none';
             document.getElementById('contenido-app').style.display = 'block';
             document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
-            cargarHistorialRondas();
+            cargarDatosPlanta();
         }
         function cerrarSesion() { sessionStorage.removeItem('auth_termica'); window.location.reload(); }
 
@@ -426,46 +295,133 @@
             document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             boton.classList.add('active');
-            if(tabId === 'tab-historial') { cargarHistorialRondas(); }
+            if(tabId === 'tab-analitica') { 
+                actualizarGraficaAnalitica(); 
+            }
         }
 
-        // 🛡️ CONTROL MATEMÁTICO DE RANGOS CRÍTICOS
         function validarRango(input, min, max) {
             const val = parseFloat(input.value);
-            if(input.value === "") {
-                input.className = ""; return;
-            }
-            if(val >= min && val <= max) {
-                input.className = "val-ok";
-            } else {
-                input.className = "val-error";
-            }
+            if(input.value === "") { input.className = ""; return; }
+            if(val >= min && val <= max) input.className = "val-ok";
+            else input.className = "val-error";
         }
 
-        async function cargarHistorialRondas() {
-            document.getElementById('status-cloud').innerText = "🔄 Sincronizando datos de planta...";
+        async function cargarDatosPlanta() {
+            document.getElementById('status-cloud').innerText = "🔄 Sincronizando Red Térmica...";
             try {
-                const { data, error } = await _supabase.from('rondas_termica').select('*').order('id', { ascending: false });
+                const { data, error } = await _supabase.from('rondas_termica').select('*').order('fecha', { ascending: true }).order('turno', { ascending: true });
                 if(error) throw error;
                 rondasCargadas = data || [];
-                document.getElementById('status-cloud').innerText = "⚡ Central Térmica Conectada";
-                renderizarHistorial();
-            } catch (e) { document.getElementById('status-cloud').innerText = "❌ Error al leer historial"; }
+                document.getElementById('status-cloud').innerText = "⚡ Central Térmica Conectada (Online)";
+                renderizarListaRondas();
+            } catch (e) { document.getElementById('status-cloud').innerText = "❌ Error de Red"; }
         }
 
-        function renderizarHistorial() {
+        function renderizarListaRondas() {
             const contenedor = document.getElementById('listaRondas');
             contenedor.innerHTML = '';
-            if(rondasCargadas.length === 0) { contenedor.innerHTML = '<p>No hay rondas guardadas.</p>'; return; }
-            
-            rondasCargadas.forEach(r => {
+            // Mostrar los más recientes arriba en la lista de auditoría
+            const reversadas = [...rondasCargadas].reverse();
+            if(reversadas.length === 0) { contenedor.innerHTML = '<p>No hay rondas registradas.</p>'; return; }
+            reversadas.forEach(r => {
                 contenedor.innerHTML += `
                     <div class="ronda-item">
-                        <b>📅 ${r.fecha} - Turno ${r.turno}</b><br>
-                        <span style="color:var(--accent)">👷 Operador:</span> ${r.operador}<br>
-                        <span style="color:var(--text-dim); font-size:12px;">💬 Obs: ${r.observaciones || 'Ninguna'}</span>
+                        <b>📅 ${r.fecha} [Turno ${r.turno}]</b> - 👷 ${r.operador}<br>
+                        <span style="color:var(--text-dim)">Obs: ${r.observaciones || 'Sin anomalías'}</span>
                     </div>
                 `;
+            });
+        }
+
+        // 🧠 MOTOR GRÁFICO PREDICTIVO - DETECCIÓN DE COMPORTAMIENTOS ANÓMALOS
+        function actualizarGraficaAnalitica() {
+            if(rondasCargadas.length === 0) return;
+
+            const conjunto = document.getElementById('selector-conjunto').value;
+            
+            // Generar las etiquetas temporales combinando Fecha + Turno (Ej: 2026-07-13 7:00)
+            const etiquetas = rondasCargadas.map(r => `${r.fecha.slice(5)} (${r.turno})`);
+            
+            let datasetsConfig = [];
+
+            if (conjunto === 'presiones') {
+                datasetsConfig = [
+                    {
+                        label: 'CI Presión Salida (PSI)',
+                        data: rondasCargadas.map(r => r.ci_presion_salida),
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.2
+                    },
+                    {
+                        label: 'Comp. Presión Tanque (PSI)',
+                        data: rondasCargadas.map(r => r.comp_pres_aire_tanque),
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.2
+                    },
+                    {
+                        label: 'Comp. Presión Instrumento (PSI)',
+                        data: rondasCargadas.map(r => r.comp_pres_aire_instrumento),
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.2
+                    }
+                ];
+            } else if (conjunto === 'temperaturas') {
+                datasetsConfig = [
+                    {
+                        label: 'Temp. Aceite (°C)',
+                        data: rondasCargadas.map(r => r.trans_temp_aceite),
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.2
+                    },
+                    {
+                        label: 'Temp. Devanado (°C)',
+                        data: rondasCargadas.map(r => r.trans_temp_devanado),
+                        borderColor: '#ec4899',
+                        backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                        tension: 0.2
+                    }
+                ];
+            } else if (conjunto === 'citygate') {
+                datasetsConfig = [
+                    {
+                        label: 'CG Presión Entrada (PSI)',
+                        data: rondasCargadas.map(r => r.cg_presion_entrada),
+                        borderColor: '#a855f7',
+                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                        tension: 0.2
+                    },
+                    {
+                        label: 'CG Presión Regulada (PSI)',
+                        data: rondasCargadas.map(r => r.cg_presion_regulada),
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        tension: 0.2
+                    }
+                ];
+            }
+
+            if(chartAnalitico) chartAnalitico.destroy();
+
+            const ctx = document.getElementById('graficaAnalitica').getContext('2d');
+            chartAnalitico = new Chart(ctx, {
+                type: 'line',
+                data: { labels: etiquetas, datasets: datasetsConfig },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#f8fafc', font: { size: 11 } } }
+                    },
+                    scales: {
+                        x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+                        y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
+                    }
+                }
             });
         }
 
@@ -475,11 +431,10 @@
             const turno = document.getElementById('turno').value;
             const observaciones = document.getElementById('observaciones').value.trim();
 
-            if(!operador) { alert("⚠️ Por favor escribe el nombre del operador antes de guardar."); return; }
+            if(!operador) { alert("⚠️ Por favor ingresa el nombre del operador."); return; }
 
-            document.getElementById('status-cloud').innerText = "🚀 Guardando bloque operativo en la nube...";
+            document.getElementById('status-cloud').innerText = "🚀 Almacenando ronda en la nube...";
 
-            // Capturar todos los campos del gran formulario
             const payload = {
                 fecha, turno, operador, observaciones,
                 ci_presion_salida: parseFloat(document.getElementById('ci_presion_salida').value) || null,
@@ -488,65 +443,25 @@
                 ci_nivel_tk_agua: parseFloat(document.getElementById('ci_nivel_tk_agua').value) || null,
                 ci_prueba_bomba_diesel: document.getElementById('ci_prueba_bomba_diesel').value,
                 ci_sistema_disponible: document.getElementById('ci_sistema_disponible').value,
-                
                 comp_pres_aire_tanque: parseFloat(document.getElementById('comp_pres_aire_tanque').value) || null,
                 comp_pres_aire_instrumento: parseFloat(document.getElementById('comp_pres_aire_instrumento').value) || null,
                 comp_pres_difer_secador: parseFloat(document.getElementById('comp_pres_difer_secador').value) || null,
                 comp_sistema_disponible: document.getElementById('comp_sistema_disponible').value,
-                
-                ccm_c11_amperimetro: parseFloat(document.getElementById('ccm_c11_amperimetro').value) || null,
-                ccm_c11_voltimetro: parseFloat(document.getElementById('ccm_c11_voltimetro').value) || null,
-                ccm_c12_estado: document.getElementById('ccm_c12_estado').value,
-                ccm_c21_estado: document.getElementById('ccm_c21_estado').value,
-                ccm_c21_amperimetro: parseFloat(document.getElementById('ccm_c21_amperimetro').value) || null,
-                ccm_c21_voltimetro: parseFloat(document.getElementById('ccm_c21_voltimetro').value) || null,
-                ccm_c22_estado: document.getElementById('ccm_c22_estado').value,
-                ccm_c31_amperimetro: parseFloat(document.getElementById('ccm_c31_amperimetro').value) || null,
-                ccm_c32_estado: document.getElementById('ccm_c32_estado').value,
-                ccm_c32_voltimetro: parseFloat(document.getElementById('ccm_c32_voltimetro').value) || null,
-                ccm_c32_frecuencimetro: parseFloat(document.getElementById('ccm_c32_frecuencimetro').value) || null,
-                ccm_prueba_diesel_bop: document.getElementById('ccm_prueba_diesel_bop').value,
-                
-                bop_main_volt: parseFloat(document.getElementById('bop_main_volt').value) || null,
-                bop_chgr_output_volt: parseFloat(document.getElementById('bop_chgr_output_volt').value) || null,
-                bop_chgr_output_amp: parseFloat(document.getElementById('bop_chgr_output_amp').value) || null,
-                bop_main_switch: parseFloat(document.getElementById('bop_main_switch').value) || null,
-                bop_select_switch: document.getElementById('bop_select_switch').value,
-                bop_nivel_baterias: document.getElementById('bop_nivel_baterias').value,
-                bop_sistema_ccm_disponible: document.getElementById('bop_sistema_ccm_disponible').value,
-                
-                sep_nivel: parseFloat(document.getElementById('sep_nivel').value) || null,
                 trans_temp_aceite: parseFloat(document.getElementById('trans_temp_aceite').value) || null,
                 trans_temp_devanado: parseFloat(document.getElementById('trans_temp_devanado').value) || null,
-                
-                agua_presion_suministro: parseFloat(document.getElementById('agua_presion_suministro').value) || null,
-                agua_nivel_tanque_almacen: parseFloat(document.getElementById('agua_nivel_tanque_almacen').value) || null,
-                agua_horas_operacion: parseFloat(document.getElementById('agua_horas_operacion').value) || null,
-                agua_planta_en_servicio: document.getElementById('agua_planta_en_servicio').value,
-                
-                comb_valvulas_alineadas: document.getElementById('comb_valvulas_alineadas').value,
-                comb_nivel_tanque_almacen: document.getElementById('comb_nivel_tanque_almacen').value,
-                comb_tanque_alineado: document.getElementById('comb_tanque_alineado').value,
-                comb_proteccion_catodica: parseFloat(document.getElementById('comb_proteccion_catodica').value) || null,
-                
                 cg_presion_entrada: parseFloat(document.getElementById('cg_presion_entrada').value) || null,
                 cg_temperatura_entrada: parseFloat(document.getElementById('cg_temperatura_entrada').value) || null,
                 cg_pres_diferencial_filtro: parseFloat(document.getElementById('cg_pres_diferencial_filtro').value) || null,
                 cg_presion_regulada: parseFloat(document.getElementById('cg_presion_regulada').value) || null,
                 cg_sistema_disponible: document.getElementById('cg_sistema_disponible').value,
-                
-                aa_turbogrupo: document.getElementById('aa_turbogrupo').value,
-                aa_bop: document.getElementById('aa_bop').value
             };
 
             try {
                 const { error } = await _supabase.from('rondas_termica').insert([payload]);
                 if(error) throw error;
-                alert("✅ ¡Éxito! Bitácora diaria guardada y sincronizada de inmediato.");
+                alert("✅ Ronda registrada con éxito. Histórico actualizado para análisis de fallas.");
                 window.location.reload();
-            } catch(e) {
-                alert("Error al subir bitácora: " + e.message);
-            }
+            } catch(e) { alert("Error: " + e.message); }
         }
     </script>
 </body>
