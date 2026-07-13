@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>TERMODORADA | Control de Rondas Seguro</title>
+    <title>TERMODORADA | Sistema de Rondas Integral</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
@@ -70,10 +70,10 @@
         }
         
         .grid-checkboxes {
-            display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 160px; overflow-y: auto; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #334155; margin-top: 5px;
+            display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 220px; overflow-y: auto; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #334155; margin-top: 5px;
         }
-        .item-checkbox { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text); }
-        .item-checkbox input { width: auto; margin: 0; }
+        .item-checkbox { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text); cursor: pointer; }
+        .item-checkbox input { width: auto; margin: 0; transform: scale(1.1); }
         .contenedor-grafica { position: relative; height: 280px; width: 100%; margin-top: 15px; background: #0f172a; padding: 10px; border-radius: 8px; box-sizing: border-box; }
         
         .bloque-fila-celular { display: block; margin-top: 10px; }
@@ -102,7 +102,7 @@
         </div>
         <div id="status-cloud">Sincronizando seguridad...</div>
 
-        <!-- PESTAÑA 1: FORMULARIO COMPLETO (TODOS LOS 10 SISTEMAS) -->
+        <!-- PESTAÑA 1: FORMULARIO COMPLETO -->
         <div id="tab-nueva" class="tab-content active">
             <div class="card">
                 <h3>Datos de Control</h3>
@@ -231,7 +231,7 @@
                 <div class="campo-grupal"><label>B.O.P.:</label><select id="aa_bop"><option value="SI">SI</option><option value="NO">NO</option></select></div>
             </div>
 
-            <!-- AUTENTICACIÓN DIGITAL OPERATIVA -->
+            <!-- CONTROL DE FIRMA Y GUARDADO -->
             <div class="card" style="margin-top: 15px;">
                 <label style="font-size: 13px; color: var(--text-dim); display:block; margin-bottom:5px;">Firma del Operador de Turno (Obligatoria):</label>
                 <canvas id="canvasFirma" class="canvas-firma"></canvas>
@@ -242,7 +242,7 @@
             </div>
         </div>
 
-        <!-- PESTAÑA ANALÍTICA -->
+        <!-- PESTAÑA ANALÍTICA TOTALMENTE RESTAURADA -->
         <div id="tab-analitica" class="tab-content">
             <div class="card">
                 <h3>📈 Auditoría Operativa Temporal</h3>
@@ -250,15 +250,51 @@
                     <div style="flex: 1;"><input type="date" id="filtro-desde" style="padding:6px;"></div>
                     <div style="flex: 1;"><input type="date" id="filtro-hasta" style="padding:6px;"></div>
                 </div>
+                
+                <label style="font-size: 13px; color: var(--text-dim);">Selecciona Variables a Cruzar:</label>
                 <div class="grid-checkboxes">
+                    <!-- 1. CI -->
                     <label class="item-checkbox"><input type="checkbox" value="ci_presion_salida" checked> 🔥 CI: Presión Salida</label>
                     <label class="item-checkbox"><input type="checkbox" value="ci_volt_bateria_1"> 🔥 CI: Volt Batería 1</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ci_volt_bateria_2"> 🔥 CI: Volt Batería 2</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ci_nivel_tk_diesel"> 🔥 CI: Nivel Diésel (%)</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ci_nivel_tk_agua"> 🔥 CI: Nivel Agua</label>
+                    <!-- 2. Compresor -->
                     <label class="item-checkbox"><input type="checkbox" value="comp_pres_aire_tanque"> 💨 Compresor: Presión Tanque</label>
+                    <label class="item-checkbox"><input type="checkbox" value="comp_pres_aire_instrumento"> 💨 Compresor: Presión Inst.</label>
+                    <label class="item-checkbox"><input type="checkbox" value="comp_pres_difer_secador"> 💨 Compresor: Presión Dif. Secador</label>
+                    <!-- 3. CCM -->
+                    <label class="item-checkbox"><input type="checkbox" value="ccm_c11_amperimetro"> ⚡ CCM: Cubículo 1.1 Amp</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ccm_c11_voltimetro"> ⚡ CCM: Cubículo 1.1 Volt</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ccm_c21_amperimetro"> ⚡ CCM: Cubículo 2.1 Amp</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ccm_c21_voltimetro"> ⚡ CCM: Cubículo 2.1 Volt</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ccm_c31_amperimetro"> ⚡ CCM: Cubículo 3.1 Amp</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ccm_c32_voltimetro"> ⚡ CCM: Cubículo 3.2 Volt</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ccm_c32_frecuencimetro"> ⚡ CCM: Frecuencímetro</label>
+                    <!-- 4. BOP -->
+                    <label class="item-checkbox"><input type="checkbox" value="bop_main_volt"> 🔋 BOP: Main Volt</label>
+                    <label class="item-checkbox"><input type="checkbox" value="bop_chgr_output_volt"> 🔋 BOP: Chgr Output Volt</label>
+                    <label class="item-checkbox"><input type="checkbox" value="bop_chgr_output_amp"> 🔋 BOP: Chgr Output Amp</label>
+                    <!-- 5. Separador -->
+                    <label class="item-checkbox"><input type="checkbox" value="sep_nivel"> 🛢️ Separador: Nivel Aceite</label>
+                    <!-- 6. Transf -->
                     <label class="item-checkbox"><input type="checkbox" value="trans_temp_aceite" checked> ⚡ Transf: Temp. Aceite</label>
+                    <label class="item-checkbox"><input type="checkbox" value="trans_temp_devanado"> ⚡ Transf: Temp. Devanado</label>
+                    <!-- 7. Aguas -->
+                    <label class="item-checkbox"><input type="checkbox" value="agua_presion_suministro"> 💧 Aguas: Presión Suministro</label>
+                    <label class="item-checkbox"><input type="checkbox" value="agua_nivel_tanque_almacen"> 💧 Aguas: Nivel Tanque</label>
+                    <label class="item-checkbox"><input type="checkbox" value="agua_horas_operacion"> 💧 Aguas: Horas Diarias (Tendencia)</label>
+                    <!-- 8. Combustible -->
                     <label class="item-checkbox"><input type="checkbox" value="comb_nivel_tanque_a"> ⛽ Combustible: Nivel Tanque A</label>
                     <label class="item-checkbox"><input type="checkbox" value="comb_nivel_tanque_b"> ⛽ Combustible: Nivel Tanque B</label>
+                    <label class="item-checkbox"><input type="checkbox" value="comb_proteccion_catodica"> ⛽ Combustible: Protec. Catódica</label>
+                    <!-- 9. City Gate -->
+                    <label class="item-checkbox"><input type="checkbox" value="cg_presion_entrada"> 🎛️ City Gate: Presión Entrada</label>
+                    <label class="item-checkbox"><input type="checkbox" value="cg_temperatura_entrada"> 🎛️ City Gate: Temp Entrada</label>
+                    <label class="item-checkbox"><input type="checkbox" value="cg_pres_diferencial_filtro"> 🎛️ City Gate: Pres Dif Filtro</label>
                     <label class="item-checkbox"><input type="checkbox" value="cg_presion_regulada"> 🎛️ City Gate: Presión Regulada</label>
                 </div>
+                
                 <button class="btn-main" onclick="actualizarGraficaAnalitica()" style="margin-top:10px; padding:10px;">📊 Analizar vs Hora Real</button>
                 <div class="contenedor-grafica"><canvas id="graficaAnalitica"></canvas></div>
             </div>
@@ -392,13 +428,25 @@
                 comp_pres_difer_secador: parseFloat(document.getElementById('comp_pres_difer_secador').value) || null,
                 comp_sistema_disponible: document.getElementById('comp_sistema_disponible').value,
                 
-                // 3. CCM 480V (Campos mapeados internamente de la estructura global)
+                // 3. CCM 480V
+                ccm_c11_amperimetro: parseFloat(document.getElementById('ccm_c11_amperimetro').value) || null,
+                ccm_c11_voltimetro: parseFloat(document.getElementById('ccm_c11_voltimetro').value) || null,
                 ccm_c12_estado: document.getElementById('ccm_c12_estado').value,
+                ccm_c21_estado: document.getElementById('ccm_c21_estado').value,
+                ccm_c21_amperimetro: parseFloat(document.getElementById('ccm_c21_amperimetro').value) || null,
+                ccm_c21_voltimetro: parseFloat(document.getElementById('ccm_c21_voltimetro').value) || null,
                 ccm_c22_estado: document.getElementById('ccm_c22_estado').value,
+                ccm_c31_amperimetro: parseFloat(document.getElementById('ccm_c31_amperimetro').value) || null,
                 ccm_c32_estado: document.getElementById('ccm_c32_estado').value,
+                ccm_c32_voltimetro: parseFloat(document.getElementById('ccm_c32_voltimetro').value) || null,
+                ccm_c32_frecuencimetro: parseFloat(document.getElementById('ccm_c32_frecuencimetro').value) || null,
                 ccm_prueba_diesel_bop: document.getElementById('ccm_prueba_diesel_bop').value,
                 
                 // 4. BOP Cargador
+                bop_main_volt: parseFloat(document.getElementById('bop_main_volt').value) || null,
+                bop_chgr_output_volt: parseFloat(document.getElementById('bop_chgr_output_volt').value) || null,
+                bop_chgr_output_amp: parseFloat(document.getElementById('bop_chgr_output_amp').value) || null,
+                bop_main_switch: parseFloat(document.getElementById('bop_main_switch').value) || null,
                 bop_select_switch: document.getElementById('bop_select_switch').value,
                 bop_nivel_baterias: document.getElementById('bop_nivel_baterias').value,
                 bop_sistema_ccm_disponible: document.getElementById('bop_sistema_ccm_disponible').value,
@@ -420,6 +468,8 @@
                 comb_nivel_tanque_a: parseFloat(document.getElementById('comb_nivel_tanque_a').value) || null,
                 comb_nivel_tanque_b: parseFloat(document.getElementById('comb_nivel_tanque_b').value) || null,
                 comb_tanque_alineado: document.getElementById('comb_tanque_alineado').value,
+                comb_valvulas_alineadas: document.getElementById('comb_valvulas_alineadas').value,
+                comb_proteccion_catodica: parseFloat(document.getElementById('comb_proteccion_catodica').value) || null,
                 
                 // 9. City Gate
                 cg_presion_entrada: parseFloat(document.getElementById('cg_presion_entrada').value) || null,
@@ -452,14 +502,22 @@
 
             const checkboxes = document.querySelectorAll('.grid-checkboxes input[type="checkbox"]');
             let datasets = []; let cIndex = 0;
-            const colores = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#ec4899', '#a855f7', '#06b6d4'];
+            const colores = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#ec4899', '#a855f7', '#06b6d4', '#14b8a6', '#f43f5e', '#6366f1'];
 
             checkboxes.forEach(cb => {
                 if (cb.checked) {
                     const f = cb.value;
                     datasets.push({
                         label: cb.parentElement.innerText.trim(),
-                        data: filtradas.map(r => r[f]),
+                        data: filtradas.map(r => {
+                            if(f === 'agua_horas_operacion' && r[f]){
+                                const parts = r[f].split(':');
+                                if(parts.length === 2) {
+                                    return parseFloat(parts[0]) + (parseFloat(parts[1])/60);
+                                }
+                            }
+                            return r[f];
+                        }),
                         borderColor: colores[cIndex % colores.length],
                         backgroundColor: 'transparent', borderWidth: 2.5, tension: 0.15
                     });
