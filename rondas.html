@@ -11,17 +11,17 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Rondas Térmica">
+    <meta name="apple-mobile-web-app-title" content="Rondas">
     
-    <!-- Icono de la App para el celular -->
+    <!-- Icono de la App -->
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        // 🚨 ROMPE-CACHÉ V1.0.9: Agregada lógica de auto-instalador nativo PWA
-        const VERSION_APP = "1.0.9"; 
+        // 🚨 ROMPE-CACHÉ V1.1.0: Corrección de coordenadas completas (Latitud, Longitud) en historial
+        const VERSION_APP = "1.1.0"; 
 
         (function() {
             const versionGuardada = localStorage.getItem('app_version');
@@ -112,7 +112,6 @@
             font-size: 11px; color: var(--text-dim); background: #1e293b; padding: 4px 8px; border-radius: 10px; margin-top: 15px; cursor: pointer; display: inline-block; border: 1px dashed #334155;
         }
         
-        /* ✨ BANNER DE INSTALACIÓN DIRECTA */
         .banner-instalador {
             background: linear-gradient(135deg, #1e3a8a, #0f172a); border: 2px solid var(--accent);
             padding: 15px; border-radius: 12px; margin-top: 20px; max-width: 320px; text-align: left; display: none;
@@ -131,7 +130,7 @@
         <button class="btn-main" onclick="verificarPINBaseDatos()" style="max-width: 280px; margin-top: 10px;">Ingresar Firma Digital</button>
         <p id="error-msg" style="color: var(--danger); margin-top: 10px; display: none;">❌ PIN Inválido o Desactivado</p>
         
-        <!-- 📲 ASISTENTE DE INSTALACIÓN AUTOMÁTICA -->
+        <!-- ASISTENTE DE INSTALACIÓN AUTOMÁTICA -->
         <div id="banner-pwa" class="banner-instalador">
             <h4>📲 Instalar App en Pantalla</h4>
             <p id="pwa-instrucciones">Cargando asistente de instalación rápida...</p>
@@ -373,12 +372,11 @@
         let chartAnalitico = null;
         let dibujoFirma = false;
         let canvas, ctxFirma;
-        let deferredPrompt; // Manejador de instalación de Android
+        let deferredPrompt;
 
         document.getElementById('ver-bloqueo').innerText = VERSION_APP;
         document.getElementById('ver-cabecera').innerText = "v" + VERSION_APP;
 
-        // LÓGICA DETECTORA DE INSTALACIÓN (AUTO-INSTALADOR)
         window.addEventListener('DOMContentLoaded', () => {
             const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             const esStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -388,7 +386,7 @@
             if (!esStandalone) {
                 banner.style.display = "block";
                 if (esIOS) {
-                    txtInstrucciones.innerHTML = "Para instalar en tu iPhone:<br>1. Toca el botón <b>Compartir</b> (cuadrado con flecha arriba).<br>2. Selecciona <b>'Agregar a inicio'</b> 📲.";
+                    txtInstrucciones.innerHTML = "Para instalar en tu iPhone:<br>1. Toca el botón <b>Compartir</b>.<br>2. Selecciona <b>'Agregar a inicio'</b> 📲.";
                 } else {
                     txtInstrucciones.innerText = "Haz clic en el botón de abajo para instalar el sistema como aplicación directa de escritorio.";
                 }
@@ -471,13 +469,23 @@
             } catch(e){ document.getElementById('status-cloud').innerText = "❌ Error de sincronización"; }
         }
 
+        // 🔄 DETALLE CORREGIDO: Imprime la coordenada completa con latitud y longitud
         function renderizarListaRondas(filtradas) {
             const contenedor = document.getElementById('listaRondas'); contenedor.innerHTML = '';
             const obj = filtradas || rondasCargadas; const rev = [...obj].reverse();
             if(rev.length === 0) { contenedor.innerHTML = '<p>No hay registros.</p>'; return; }
             rev.forEach(r => {
                 const h = r.created_at ? new Date(r.created_at).toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}) : 'N/A';
-                contenedor.innerHTML += `<div class="ronda-item"><b>📅 ${r.fecha}</b> | Real: ${h}<br><span style="color:var(--accent)">👷 ${r.operador}</span> (GPS: ${r.latitud || 'N/A'})</div>`;
+                
+                // Formatear coordenadas completas de manera segura
+                let coordenada = "N/A";
+                if (r.latitud && r.longitud) {
+                    coordenada = `${r.latitud}, ${r.longitud}`;
+                } else if (r.latitud) {
+                    coordenada = r.latitud;
+                }
+
+                contenedor.innerHTML += `<div class="ronda-item"><b>📅 ${r.fecha}</b> | Real: ${h}<br><span style="color:var(--accent)">👷 ${r.operador}</span> (GPS: ${coordenada})</div>`;
             });
         }
 
