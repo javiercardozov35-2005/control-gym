@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>TERMODORADA | Sistema de Rondas Seguro</title>
+    <title>TERMODORADA | Sistema de Rondas Blindado</title>
     
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -16,9 +16,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        // 🚨 ROMPE-CACHÉ V1.0.5: Obliga al acceso directo a limpiar su memoria y tomar los nuevos cambios
+        // 🚨 ROMPE-CACHÉ V1.0.6: Fuerza la actualización inmediata en el celular
         (function() {
-            const versionActual = "1.0.5"; 
+            const versionActual = "1.0.6"; 
             const versionGuardada = localStorage.getItem('app_version');
             if (versionGuardada !== versionActual) {
                 localStorage.setItem('app_version', versionActual);
@@ -125,11 +125,11 @@
                 <h3>Datos de Control</h3>
                 <div class="bloque-fila-celular">
                     <div class="campo-grupal">
-                        <label>Fecha de la Ronda:</label>
+                        <label data-label="Fecha de la Ronda">Fecha de la Ronda:</label>
                         <input type="date" id="fecha">
                     </div>
                     <div class="campo-grupal">
-                        <label>Turno Asignado:</label>
+                        <label data-label="Turno Asignado">Turno Asignado:</label>
                         <select id="turno">
                             <option value="6:00">🌅 Turno 06:00 AM</option>
                             <option value="18:00">🌌 Turno 06:00 PM</option>
@@ -143,117 +143,122 @@
             <!-- 1. SISTEMA CONTRA-INCENDIO -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-ci')">🔥 1. Sistema Contra-Incendio <span>▼</span></button>
             <div id="sec-ci" class="seccion-contenido">
-                <div class="campo-grupal"><label>Presión Salida <span class="tag-range">[PT604] (110 - 200 PSI)</span></label><input type="number" id="ci_presion_salida" step="any" oninput="validarRango(this, 110, 200)"></div>
-                <div class="campo-grupal"><label>Volt. Batería 1 <span class="tag-range">(10-14V)</span></label><input type="number" id="ci_volt_bateria_1" step="any" oninput="validarRango(this, 10, 14)"></div>
-                <div class="campo-grupal"><label>Volt. Batería 2 <span class="tag-range">(10-14V)</span></label><input type="number" id="ci_volt_bateria_2" step="any" oninput="validarRango(this, 10, 14)"></div>
-                <div class="campo-grupal"><label>Nivel TK Diesel (%) de 0 a 100</label><input type="number" id="ci_nivel_tk_diesel" min="0" max="100" oninput="validarRango(this, 0, 100)"></div>
-                <div class="campo-grupal"><label>Nivel TK Agua <span class="tag-range">(9 - 10.5 MTS)</span></label><input type="number" id="ci_nivel_tk_agua" step="any" oninput="validarRango(this, 9, 10.5)"></div>
-                <div class="campo-grupal"><label>Prueba Bomba Diesel (Miércoles):</label><select id="ci_prueba_bomba_diesel"><option value="NO">NO</option><option value="SI">SI</option></select></div>
-                <div class="campo-grupal"><label>Sistema Disponible:</label><select id="ci_sistema_disponible"><option value="SI">SI</option><option value="NO">NO</option></select></div>
+                <div class="campo-grupal"><label data-label="CI: Presión Salida">Presión Salida <span class="tag-range">[PT604] (110 - 200 PSI)</span></label><input type="number" id="ci_presion_salida" step="any" oninput="validarRango(this, 110, 200)"></div>
+                <div class="campo-grupal"><label data-label="CI: Volt. Batería 1">Volt. Batería 1 <span class="tag-range">(10-14V)</span></label><input type="number" id="ci_volt_bateria_1" step="any" oninput="validarRango(this, 10, 14)"></div>
+                <div class="campo-grupal"><label data-label="CI: Volt. Batería 2">Volt. Batería 2 <span class="tag-range">(10-14V)</span></label><input type="number" id="ci_volt_bateria_2" step="any" oninput="validarRango(this, 10, 14)"></div>
+                <div class="campo-grupal"><label data-label="CI: Nivel TK Diesel">Nivel TK Diesel (%) de 0 a 100</label><input type="number" id="ci_nivel_tk_diesel" min="0" max="100" oninput="validarRango(this, 0, 100)"></div>
+                <div class="campo-grupal"><label data-label="CI: Nivel TK Agua">Nivel TK Agua <span class="tag-range">(9 - 10.5 MTS)</span></label><input type="number" id="ci_nivel_tk_agua" step="any" oninput="validarRango(this, 9, 10.5)"></div>
+                <div class="campo-grupal"><label data-label="CI: Prueba Bomba Diesel">Prueba Bomba Diesel (Miércoles):</label><select id="ci_prueba_bomba_diesel"><option value="NO">NO</option><option value="SI">SI</option></select></div>
+                <div class="campo-grupal"><label data-label="CI: Sistema Disponible">Sistema Disponible:</label><select id="ci_sistema_disponible"><option value="SI">SI</option><option value="NO">NO</option></select></div>
             </div>
 
             <!-- 2. COMPRESOR DE AIRE -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-comp')">💨 2. Compresor de Aire <span>▼</span></button>
             <div id="sec-comp" class="seccion-contenido">
-                <div class="campo-grupal"><label>Pres. Aire Tanque <span class="tag-range">[PG501] (80 - 200 PSI)</span></label><input type="number" id="comp_pres_aire_tanque" step="any" oninput="validarRango(this, 80, 200)"></div>
-                <div class="campo-grupal"><label>Pres. Aire Instrumento <span class="tag-range">[PT503] (80 - 150 PSI)</span></label><input type="number" id="comp_pres_aire_instrumento" step="any" oninput="validarRango(this, 80, 150)"></div>
-                <div class="campo-grupal"><label>Pres. Difer. Secador Aire <span class="tag-range">(0 - 10 PSI)</span></label><input type="number" id="comp_pres_difer_secador" step="any" oninput="validarRango(this, 0, 10)"></div>
-                <div class="campo-grupal"><label>Sistema Disponible:</label><select id="comp_sistema_disponible"><option value="SI">SI</option><option value="NO">NO</option></select></div>
+                <div class="campo-grupal"><label data-label="Compresor: Pres. Aire Tanque">Pres. Aire Tanque <span class="tag-range">[PG501] (80 - 200 PSI)</span></label><input type="number" id="comp_pres_aire_tanque" step="any" oninput="validarRango(this, 80, 200)"></div>
+                <div class="campo-grupal"><label data-label="Compresor: Pres. Aire Instrumento">Pres. Aire Instrumento <span class="tag-range">[PT503] (80 - 150 PSI)</span></label><input type="number" id="comp_pres_aire_instrumento" step="any" oninput="validarRango(this, 80, 150)"></div>
+                <div class="campo-grupal"><label data-label="Compresor: Pres. Diferencial Secador">Pres. Difer. Secador Aire <span class="tag-range">(0 - 10 PSI)</span></label><input type="number" id="comp_pres_difer_secador" step="any" oninput="validarRango(this, 0, 10)"></div>
+                <div class="campo-grupal"><label data-label="Compresor: Sistema Disponible">Sistema Disponible:</label><select id="comp_sistema_disponible"><option value="SI">SI</option><option value="NO">NO</option></select></div>
             </div>
 
             <!-- 3. CCM 480 VOLTS -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-ccm')">⚡ 3. CCM 480 Volts <span>▼</span></button>
             <div id="sec-ccm" class="seccion-contenido">
                 <h3>Cubículo N1.1</h3>
-                <div class="campo-grupal"><label>Amperímetro (0 - 600 AMP)</label><input type="number" id="ccm_c11_amperimetro" step="any" oninput="validarRango(this, 0, 600)"></div>
-                <div class="campo-grupal"><label>Voltímetro (450 - 504 VOLT)</label><input type="number" id="ccm_c11_voltimetro" step="any" oninput="validarRango(this, 450, 504)"></div>
+                <div class="campo-grupal"><label data-label="CCM: C1.1 Amperímetro">Amperímetro (0 - 600 AMP)</label><input type="number" id="ccm_c11_amperimetro" step="any" oninput="validarRango(this, 0, 600)"></div>
+                <div class="campo-grupal"><label data-label="CCM: C1.1 Voltímetro">Voltímetro (450 - 504 VOLT)</label><input type="number" id="ccm_c11_voltimetro" step="any" oninput="validarRango(this, 450, 504)"></div>
                 <h3>Cubículo N1.2 [52-1]</h3>
-                <select id="ccm_c12_estado"><option value="I (IN)">I (IN)</option><option value="O (OUT)">O (OUT)</option></select>
+                <div class="campo-grupal"><label data-label="CCM: C1.2 Estado">Estado:</label><select id="ccm_c12_estado"><option value="I (IN)">I (IN)</option><option value="O (OUT)">O (OUT)</option></select></div>
                 <h3>Cubículo N2.1 [52-N]</h3>
-                <select id="ccm_c21_estado"><option value="I (IN)">I (IN)</option><option value="O (OUT)">O (OUT)</option></select>
-                <div class="campo-grupal"><label>Amperímetro (0 - 600 AMP)</label><input type="number" id="ccm_c21_amperimetro" step="any" oninput="validarRango(this, 0, 600)"></div>
-                <div class="campo-grupal"><label>Voltímetro (450 - 504 VOLT)</label><input type="number" id="ccm_c21_voltimetro" step="any" oninput="validarRango(this, 450, 504)"></div>
+                <div class="campo-grupal"><label data-label="CCM: C2.1 Estado">Estado:</label><select id="ccm_c21_estado"><option value="I (IN)">I (IN)</option><option value="O (OUT)">O (OUT)</option></select></div>
+                <div class="campo-grupal"><label data-label="CCM: C2.1 Amperímetro">Amperímetro (0 - 600 AMP)</label><input type="number" id="ccm_c21_amperimetro" step="any" oninput="validarRango(this, 0, 600)"></div>
+                <div class="campo-grupal"><label data-label="CCM: C2.1 Voltímetro">Voltímetro (450 - 504 VOLT)</label><input type="number" id="ccm_c21_voltimetro" step="any" oninput="validarRango(this, 450, 504)"></div>
                 <h3>Cubículo N2.2 [52-2]</h3>
-                <select id="ccm_c22_estado"><option value="I (IN)">I (IN)</option><option value="O (OUT)">O (OUT)</option></select>
+                <div class="campo-grupal"><label data-label="CCM: C2.2 Estado">Estado:</label><select id="ccm_c22_estado"><option value="I (IN)">I (IN)</option><option value="O (OUT)">O (OUT)</option></select></div>
                 <h3>Cubículo N3.1</h3>
-                <div class="campo-grupal"><label>Amperímetro (0 - 600 AMP)</label><input type="number" id="ccm_c31_amperimetro" step="any" oninput="validarRango(this, 0, 600)"></div>
+                <div class="campo-grupal"><label data-label="CCM: C3.1 Amperímetro">Amperímetro (0 - 600 AMP)</label><input type="number" id="ccm_c31_amperimetro" step="any" oninput="validarRango(this, 0, 600)"></div>
                 <h3>Cubículo N3.2 [52-EDG]</h3>
-                <select id="ccm_c32_estado"><option value="I (IN)">I (IN)</option><option value="O (OUT)">O (OUT)</option></select>
-                <div class="campo-grupal"><label>Voltímetro (450 - 504 VOLT)</label><input type="number" id="ccm_c32_voltimetro" step="any" oninput="validarRango(this, 450, 504)"></div>
-                <div class="campo-grupal"><label>Frecuencímetro (59.95 - 60.05 HZ)</label><input type="number" id="ccm_c32_frecuencimetro" step="0.01" oninput="validarRango(this, 59.95, 60.05)"></div>
-                <div class="campo-grupal"><label>Prueba Diesel BOP (Miércoles):</label><select id="ccm_prueba_diesel_bop"><option value="NO">NO</option><option value="SI">SI</option></select></div>
+                <div class="campo-grupal"><label data-label="CCM: C3.2 Estado">Estado:</label><select id="ccm_c32_estado"><option value="I (IN)">I (IN)</option><option value="O (OUT)">O (OUT)</option></select></div>
+                <div class="campo-grupal"><label data-label="CCM: C3.2 Voltímetro">Voltímetro (450 - 504 VOLT)</label><input type="number" id="ccm_c32_voltimetro" step="any" oninput="validarRango(this, 450, 504)"></div>
+                <div class="campo-grupal"><label data-label="CCM: Frecuencímetro">Frecuencímetro (59.95 - 60.05 HZ)</label><input type="number" id="ccm_c32_frecuencimetro" step="0.01" oninput="validarRango(this, 59.95, 60.05)"></div>
+                <div class="campo-grupal"><label data-label="CCM: Prueba Diesel BOP">Prueba Diesel BOP (Miércoles):</label><select id="ccm_prueba_diesel_bop"><option value="NO">NO</option><option value="SI">SI</option></select></div>
             </div>
 
             <!-- 4. CARGADOR DE BATERIAS BOP CCM -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-bop')">🔋 4. Cargador de Baterías BOP CCM <span>▼</span></button>
             <div id="sec-bop" class="seccion-contenido">
-                <div class="campo-grupal"><label>Main Volt (450 - 504 VOLT)</label><input type="number" id="bop_main_volt" step="any" oninput="validarRango(this, 450, 504)"></div>
-                <div class="campo-grupal"><label>Chgr Output Volt (120 - 160 VOLT)</label><input type="number" id="bop_chgr_output_volt" step="any" oninput="validarRango(this, 120, 160)"></div>
-                <div class="campo-grupal"><label>Chgr Output Amp (0 - 15 AMP)</label><input type="number" id="bop_chgr_output_amp" step="any" oninput="validarRango(this, 0, 15)"></div>
-                <div class="campo-grupal"><label>Main Switch (0 - 1)</label><input type="number" id="bop_main_switch" step="any" oninput="validarRango(this, 0, 1)"></div>
-                <div class="campo-grupal"><label>Select Switch:</label><select id="bop_select_switch"><option value="1 (BOOST)">1 (BOOST)</option><option value="2 (EQUAL)">2 (EQUAL)</option></select></div>
-                <!-- 🔄 CAMBIO: Estado Baterías con Bueno / Regular / Malo -->
+                <div class="campo-grupal"><label data-label="BOP: Main Volt">Main Volt (450 - 504 VOLT)</label><input type="number" id="bop_main_volt" step="any" oninput="validarRango(this, 450, 504)"></div>
+                <div class="campo-grupal"><label data-label="BOP: Chgr Output Volt">Chgr Output Volt (120 - 160 VOLT)</label><input type="number" id="bop_chgr_output_volt" step="any" oninput="validarRango(this, 120, 160)"></div>
+                <div class="campo-grupal"><label data-label="BOP: Chgr Output Amp">Chgr Output Amp (0 - 15 AMP)</label><input type="number" id="bop_chgr_output_amp" step="any" oninput="validarRango(this, 0, 15)"></div>
+                <div class="campo-grupal"><label data-label="BOP: Main Switch">Main Switch (0 - 1)</label><input type="number" id="bop_main_switch" step="any" oninput="validarRango(this, 0, 1)"></div>
+                <div class="campo-grupal"><label data-label="BOP: Select Switch">Select Switch:</label><select id="bop_select_switch"><option value="1 (BOOST)">1 (BOOST)</option><option value="2 (EQUAL)">2 (EQUAL)</option></select></div>
                 <div class="campo-grupal">
-                    <label>Estado Baterías:</label>
+                    <label data-label="BOP: Estado Baterías">Estado Baterías:</label>
                     <select id="bop_nivel_baterias">
                         <option value="Bueno">🟢 Bueno</option>
                         <option value="Regular">🟡 Regular</option>
                         <option value="Malo">🔴 Malo</option>
                     </select>
                 </div>
-                <div class="campo-grupal"><label>Sistema CCM Disponible:</label><select id="bop_sistema_ccm_disponible"><option value="SI">SI</option><option value="NO">NO</option></select></div>
+                <div class="campo-grupal"><label data-label="BOP: Sistema CCM Disponible">Sistema CCM Disponible:</label><select id="bop_sistema_ccm_disponible"><option value="SI">SI</option><option value="NO">NO</option></select></div>
             </div>
 
             <!-- 5. SEPARADOR DE ACEITE -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-sep')">🛢️ 5. Separador de Aceite <span>▼</span></button>
             <div id="sec-sep" class="seccion-contenido">
-                <div class="campo-grupal"><label>Nivel (0 - 1 MTS)</label><input type="number" id="sep_nivel" step="any" oninput="validarRango(this, 0, 1)"></div>
+                <div class="campo-grupal"><label data-label="Separador: Nivel Aceite">Nivel (0 - 1 MTS)</label><input type="number" id="sep_nivel" step="any" oninput="validarRango(this, 0, 1)"></div>
             </div>
 
             <!-- 6. TRANSFORMADOR PRINCIPAL -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-trans')">⚡ 6. Transformador Principal <span>▼</span></button>
             <div id="sec-trans" class="seccion-contenido">
-                <div class="campo-grupal"><label>Temperatura de Aceite (15 - 100 °C)</label><input type="number" id="trans_temp_aceite" step="any" oninput="validarRango(this, 15, 100)"></div>
-                <div class="campo-grupal"><label>Temperatura de Devanado (15 - 120 °C)</label><input type="number" id="trans_temp_devanado" step="any" oninput="validarRango(this, 15, 120)"></div>
+                <div class="campo-grupal"><label data-label="Transf: Temp Aceite">Temperatura de Aceite (15 - 100 °C)</label><input type="number" id="trans_temp_aceite" step="any" oninput="validarRango(this, 15, 100)"></div>
+                <div class="campo-grupal"><label data-label="Transf: Temp Devanado">Temperatura de Devanado (15 - 120 °C)</label><input type="number" id="trans_temp_devanado" step="any" oninput="validarRango(this, 15, 120)"></div>
             </div>
 
             <!-- 7. PLANTA DE AGUAS -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-agua')">💧 7. Planta de Aguas <span>▼</span></button>
             <div id="sec-agua" class="seccion-contenido">
-                <div class="campo-grupal"><label>Presión Suministro (30 - 60 PSI)</label><input type="number" id="agua_presion_suministro" step="any" oninput="validarRango(this, 30, 60)"></div>
-                <div class="campo-grupal"><label>Nivel Tanque (5 - 7.5 MTS)</label><input type="number" id="agua_nivel_tanque_almacen" step="any" oninput="validarRango(this, 5, 7.5)"></div>
+                <div class="campo-grupal"><label data-label="Aguas: Presión Suministro">Presión Suministro (30 - 60 PSI)</label><input type="number" id="agua_presion_suministro" step="any" oninput="validarRango(this, 30, 60)"></div>
+                <div class="campo-grupal"><label data-label="Aguas: Nivel Tanque">Nivel Tanque (5 - 7.5 MTS)</label><input type="number" id="agua_nivel_tanque_almacen" step="any" oninput="validarRango(this, 5, 7.5)"></div>
                 <div class="campo-grupal">
-                    <label>Horas de Operación (diarias):</label>
-                    <div style="display: flex; gap: 8px;"><input type="number" id="agua_horas_entero" placeholder="Horas (0-24)"><input type="number" id="agua_minutos_entero" placeholder="Minutos (0-59)"></div>
+                    <label data-label="Aguas: Horas Operación">Horas de Operación (diarias):</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="number" id="agua_horas_entero" placeholder="Horas (0-24)">
+                        <input type="number" id="agua_minutos_entero" placeholder="Minutos (0-59)">
+                    </div>
                 </div>
-                <div class="campo-grupal"><label>Planta en Servicio:</label><select id="agua_planta_en_servicio"><option value="Encendida">Encendida</option><option value="Apagada">Apagada</option></select></div>
+                <div class="campo-grupal"><label data-label="Aguas: Planta en Servicio">Planta en Servicio:</label><select id="agua_planta_en_servicio"><option value="Encendida">Encendida</option><option value="Apagada">Apagada</option></select></div>
             </div>
 
             <!-- 8. TANQUES DE COMBUSTIBLE -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-comb')">⛽ 8. Tanques de Combustible <span>▼</span></button>
             <div id="sec-comb" class="seccion-contenido">
-                <div class="campo-grupal"><label>Tanque A (Mts y Cm, ej: 6.3)</label><input type="number" id="comb_nivel_tanque_a" step="0.01" placeholder="0.00"></div>
-                <div class="campo-grupal"><label>Tanque B (Mts y Cm, ej: 6.3)</label><input type="number" id="comb_nivel_tanque_b" step="0.01" placeholder="0.00"></div>
-                <div class="campo-grupal"><label>Válvulas Alineadas:</label><select id="comb_valvulas_alineadas"><option value="SI">SI</option><option value="NO">NO</option></select></div>
-                <div class="campo-grupal"><label>Tanque Alineado:</label><select id="comb_tanque_alineado"><option value="A">Tanque A</option><option value="B">Tanque B</option></select></div>
-                <div class="campo-grupal"><label>Protección Catódica (Valor V):</label><input type="number" id="comb_proteccion_catodica" step="any"></div>
+                <!-- 🔄 CORRECCIÓN DE VARIABLE: Modificado id para consistencia directa de almacenamiento -->
+                <div class="campo-grupal"><label data-label="Combustible: Nivel Tanque A">Tanque A (Mts y Cm, ej: 6.31)</label><input type="number" id="comb_nivel_tanque_a" step="0.01" placeholder="0.00"></div>
+                <div class="campo-grupal"><label data-label="Combustible: Nivel Tanque B">Tanque B (Mts y Cm, ej: 6.31)</label><input type="number" id="comb_nivel_tanque_b" step="0.01" placeholder="0.00"></div>
+                <div class="campo-grupal"><label data-label="Combustible: Válvulas Alineadas">Válvulas Alineadas:</label><select id="comb_valvulas_alineadas"><option value="SI">SI</option><option value="NO">NO</option></select></div>
+                <div class="campo-grupal"><label data-label="Combustible: Tanque Alineado">Tanque Alineado:</label><select id="comb_tanque_alineado"><option value="A">Tanque A</option><option value="B">Tanque B</option></select></div>
+                <div class="campo-grupal"><label data-label="Combustible: Protección Catódica Voltios">Protección Catódica <span class="tag-range">(Valor V)</span></label><input type="number" id="comb_proteccion_catodica" step="any"></div>
+                <!-- ✨ NUEVO CAMPO: Amperios de Protección Catódica -->
+                <div class="campo-grupal"><label data-label="Combustible: Protección Catódica Amperios">Protección Catódica <span class="tag-range">(0 - 1 AMP)</span></label><input type="number" id="comb_proteccion_catodica_amp" step="any" oninput="validarRango(this, 0, 1)"></div>
             </div>
 
             <!-- 9. CITY GATE -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-cg')">🎛️ 9. City Gate <span>▼</span></button>
             <div id="sec-cg" class="seccion-contenido">
-                <div class="campo-grupal"><label>Presión de Entrada [PT-1] (350 - 1200 PSI)</label><input type="number" id="cg_presion_entrada" step="any" oninput="validarRango(this, 350, 1200)"></div>
-                <div class="campo-grupal"><label>Temperatura de Entrada TT-1 (68 - 122 °F)</label><input type="number" id="cg_temperatura_entrada" step="any" oninput="validarRango(this, 68, 122)"></div>
-                <div class="campo-grupal"><label>Pres. Diferencial Filtro (0 - 10 PSI)</label><input type="number" id="cg_pres_diferencial_filtro" step="any" oninput="validarRango(this, 0, 10)"></div>
-                <div class="campo-grupal"><label>Presión Regulada [PT-3] (350 - 500 PSI)</label><input type="number" id="cg_presion_regulada" step="any" oninput="validarRango(this, 350, 500)"></div>
-                <div class="campo-grupal"><label>Sistema Disponible:</label><select id="cg_sistema_disponible"><option value="SI">SI</option><option value="NO">NO</option></select></div>
+                <div class="campo-grupal"><label data-label="City Gate: Presión Entrada">Presión de Entrada [PT-1] (350 - 1200 PSI)</label><input type="number" id="cg_presion_entrada" step="any" oninput="validarRango(this, 350, 1200)"></div>
+                <div class="campo-grupal"><label data-label="City Gate: Temp Entrada">Temperatura de Entrada TT-1 (68 - 122 °F)</label><input type="number" id="cg_temperatura_entrada" step="any" oninput="validarRango(this, 68, 122)"></div>
+                <div class="campo-grupal"><label data-label="City Gate: Pres. Diferencial Filtro">Pres. Diferencial Filtro (0 - 10 PSI)</label><input type="number" id="cg_pres_diferencial_filtro" step="any" oninput="validarRango(this, 0, 10)"></div>
+                <div class="campo-grupal"><label data-label="City Gate: Presión Regulada">Presión Regulada [PT-3] (350 - 500 PSI)</label><input type="number" id="cg_presion_regulada" step="any" oninput="validarRango(this, 350, 500)"></div>
+                <div class="campo-grupal"><label data-label="City Gate: Sistema Disponible">Sistema Disponible:</label><select id="cg_sistema_disponible"><option value="SI">SI</option><option value="NO">NO</option></select></div>
             </div>
 
             <!-- 10. UNIDADES DE AIRE ACONDICIONADO -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-aa')">❄️ 10. Unidades de Aire Acondicionado <span>▼</span></button>
             <div id="sec-aa" class="seccion-contenido">
-                <div class="campo-grupal"><label>Turbogrupo:</label><select id="aa_turbogrupo"><option value="SI">SI</option><option value="NO">NO</option></select></div>
-                <div class="campo-grupal"><label>B.O.P.:</label><select id="aa_bop"><option value="SI">SI</option><option value="NO">NO</option></select></div>
+                <div class="campo-grupal"><label data-label="Aires: Turbogrupo">Turbogrupo:</label><select id="aa_turbogrupo"><option value="SI">SI</option><option value="NO">NO</option></select></div>
+                <div class="campo-grupal"><label data-label="Aires: BOP">B.O.P.:</label><select id="aa_bop"><option value="SI">SI</option><option value="NO">NO</option></select></div>
             </div>
 
             <!-- CONTROL DE FIRMA Y GUARDADO -->
@@ -304,7 +309,8 @@
                     <label class="item-checkbox"><input type="checkbox" value="agua_horas_operacion"> 💧 Aguas: Horas Diarias (Tendencia)</label>
                     <label class="item-checkbox"><input type="checkbox" value="comb_nivel_tanque_a"> ⛽ Combustible: Nivel Tanque A</label>
                     <label class="item-checkbox"><input type="checkbox" value="comb_nivel_tanque_b"> ⛽ Combustible: Nivel Tanque B</label>
-                    <label class="item-checkbox"><input type="checkbox" value="comb_proteccion_catodica"> ⛽ Combustible: Protec. Catódica</label>
+                    <label class="item-checkbox"><input type="checkbox" value="comb_proteccion_catodica"> ⛽ Combustible: Protec. Catódica Voltios</label>
+                    <label class="item-checkbox"><input type="checkbox" value="comb_proteccion_catodica_amp"> ⛽ Combustible: Protec. Catódica Amperios</label>
                     <label class="item-checkbox"><input type="checkbox" value="cg_presion_entrada"> 🎛️ City Gate: Presión Entrada</label>
                     <label class="item-checkbox"><input type="checkbox" value="cg_temperatura_entrada"> 🎛️ City Gate: Temp Entrada</label>
                     <label class="item-checkbox"><input type="checkbox" value="cg_pres_diferencial_filtro"> 🎛️ City Gate: Pres Dif Filtro</label>
@@ -408,6 +414,27 @@
         }
 
         function subirRondaConFirmaYGPS() {
+            // ✨ ALERTA ANTIBLANCOS: Validamos todos los campos del formulario antes de seguir
+            const inputs = document.querySelectorAll("#tab-nueva input, #tab-nueva select");
+            for (let item of inputs) {
+                if (item.id === "observaciones" || item.id === "pin-input") continue; // Campos opcionales
+                if (item.value.trim() === "") {
+                    // Buscamos el texto amigable de la etiqueta
+                    const grupo = item.closest('.campo-grupal');
+                    const labelText = grupo ? grupo.querySelector('label').getAttribute('data-label') : item.id;
+                    alert("⚠️ CAMPO REQUERIDO VACIÓ: Por favor ingresa el valor de '" + labelText + "' antes de enviar la bitácora.");
+                    document.getElementById('status-cloud').innerText = "❌ Guardado cancelado: faltan datos";
+                    item.focus();
+                    return;
+                }
+            }
+
+            // Validar firma
+            if (!dibujoFirma && ctxFirma.getImageData(0,0,canvas.width,canvas.height).data.every(p => p === 0)) {
+                alert("⚠️ FIRMA OBLIGATORIA: El operador debe estampar su firma digital antes de enviar.");
+                return;
+            }
+
             document.getElementById('status-cloud').innerText = "📡 Solicitando Geolocalización Real...";
             const firmaImagenBase64 = canvas.toDataURL();
             if (navigator.geolocation) {
@@ -432,14 +459,14 @@
             const m = parseInt(document.getElementById('agua_minutos_entero').value) || 0;
             const stringHorasAgua = String(h).padStart(2, '0') + ":" + String(m).padStart(2, '0');
 
-            // ⚡ ESTRUCTURA SINCRONIZADA CON SUPABASE
             const payload = {
                 fecha, turno, operador: operadorActivo, latitud: lat, longitud: lon, firma_base64: firma,
                 observaciones: document.getElementById('observaciones').value,
                 
                 ci_presion_salida: parseFloat(document.getElementById('ci_presion_salida').value) || null,
+                ci_volt_bateria: parseFloat(document.getElementById('ci_volt_bateria_1').value) || null, // Sincronizado
                 ci_volt_bateria_1: parseFloat(document.getElementById('ci_volt_bateria_1').value) || null,
-                ci_volt_bateria_2: parseFloat(document.getElementById('ci_volt_bateria_2').value) || null,
+                ci_volt_bateria_2: parseFloat(document.getElementById('ci_volt_bateria_2').value) || null, 
                 ci_nivel_tk_diesel: document.getElementById('ci_nivel_tk_diesel').value,
                 ci_nivel_tk_agua: parseFloat(document.getElementById('ci_nivel_tk_agua').value) || null,
                 ci_prueba_bomba_diesel: document.getElementById('ci_prueba_bomba_diesel').value,
@@ -480,11 +507,13 @@
                 agua_horas_operacion: stringHorasAgua,
                 agua_planta_en_servicio: document.getElementById('agua_planta_en_servicio').value,
                 
-                comb_nivel_tanque_a: parseFloat(document.getElementById('comb_nivel_tanque_a').value) || null,
-                comb_nivel_tanque_b: parseFloat(document.getElementById('comb_nivel_tanque_b').value) || null,
+                // 🔄 AJUSTE DE MAPEO DIRECTO: Subidos como texto para evitar rechazos numéricos de Supabase
+                comb_nivel_tanque_a: document.getElementById('comb_nivel_tanque_a').value,
+                comb_nivel_tanque_b: document.getElementById('comb_nivel_tanque_b').value,
                 comb_tanque_alineado: document.getElementById('comb_tanque_alineado').value,
                 comb_valvulas_alineadas: document.getElementById('comb_valvulas_alineadas').value,
                 comb_proteccion_catodica: parseFloat(document.getElementById('comb_proteccion_catodica').value) || null,
+                comb_proteccion_catodica_amp: parseFloat(document.getElementById('comb_proteccion_catodica_amp').value) || null, // Sincronizado
                 
                 cg_presion_entrada: parseFloat(document.getElementById('cg_presion_entrada').value) || null,
                 cg_temperatura_entrada: parseFloat(document.getElementById('cg_temperatura_entrada').value) || null,
@@ -498,7 +527,7 @@
 
             const { error } = await _supabase.from('rondas_termica').insert([payload]);
             if (!error) { alert("✅ Bitácora Termodorada sincronizada con éxito."); window.location.reload(); } 
-            else { alert("Error al guardar: " + error.message); }
+            else { alert("Error crítico al guardar: " + error.message); }
         }
 
         function actualizarGraficaAnalitica() {
