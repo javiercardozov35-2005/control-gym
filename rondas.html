@@ -16,9 +16,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        // 🚨 ROMPE-CACHÉ V1.0.6: Fuerza la actualización inmediata en el celular
+        // 🚨 ROMPE-CACHÉ V1.0.7: Fuerza la limpieza inmediata en el celular para aplicar las correcciones del GPS
         (function() {
-            const versionActual = "1.0.6"; 
+            const versionActual = "1.0.7"; 
             const versionGuardada = localStorage.getItem('app_version');
             if (versionGuardada !== versionActual) {
                 localStorage.setItem('app_version', versionActual);
@@ -234,13 +234,12 @@
             <!-- 8. TANQUES DE COMBUSTIBLE -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-comb')">⛽ 8. Tanques de Combustible <span>▼</span></button>
             <div id="sec-comb" class="seccion-contenido">
-                <!-- 🔄 CORRECCIÓN DE VARIABLE: Modificado id para consistencia directa de almacenamiento -->
-                <div class="campo-grupal"><label data-label="Combustible: Nivel Tanque A">Tanque A (Mts y Cm, ej: 6.31)</label><input type="number" id="comb_nivel_tanque_a" step="0.01" placeholder="0.00"></div>
-                <div class="campo-grupal"><label data-label="Combustible: Nivel Tanque B">Tanque B (Mts y Cm, ej: 6.31)</label><input type="number" id="comb_nivel_tanque_b" step="0.01" placeholder="0.00"></div>
+                <!-- Cambiados a type="text" para permitir compatibilidad total con formatos de texto antiguos de Supabase sin crasheos en validación -->
+                <div class="campo-grupal"><label data-label="Combustible: Nivel Tanque A">Tanque A (Mts y Cm, ej: 6.31)</label><input type="text" id="comb_nivel_tanque_a" placeholder="0.00"></div>
+                <div class="campo-grupal"><label data-label="Combustible: Nivel Tanque B">Tanque B (Mts y Cm, ej: 6.31)</label><input type="text" id="comb_nivel_tanque_b" placeholder="0.00"></div>
                 <div class="campo-grupal"><label data-label="Combustible: Válvulas Alineadas">Válvulas Alineadas:</label><select id="comb_valvulas_alineadas"><option value="SI">SI</option><option value="NO">NO</option></select></div>
                 <div class="campo-grupal"><label data-label="Combustible: Tanque Alineado">Tanque Alineado:</label><select id="comb_tanque_alineado"><option value="A">Tanque A</option><option value="B">Tanque B</option></select></div>
                 <div class="campo-grupal"><label data-label="Combustible: Protección Catódica Voltios">Protección Catódica <span class="tag-range">(Valor V)</span></label><input type="number" id="comb_proteccion_catodica" step="any"></div>
-                <!-- ✨ NUEVO CAMPO: Amperios de Protección Catódica -->
                 <div class="campo-grupal"><label data-label="Combustible: Protección Catódica Amperios">Protección Catódica <span class="tag-range">(0 - 1 AMP)</span></label><input type="number" id="comb_proteccion_catodica_amp" step="any" oninput="validarRango(this, 0, 1)"></div>
             </div>
 
@@ -414,45 +413,68 @@
         }
 
         function subirRondaConFirmaYGPS() {
-            // ✨ ALERTA ANTIBLANCOS: Validamos todos los campos del formulario antes de seguir
+            // 📝 VALIDACIÓN ESTRICTA DE ENTRADAS ANTES DE LANZAR GPS
             const inputs = document.querySelectorAll("#tab-nueva input, #tab-nueva select");
             for (let item of inputs) {
-                if (item.id === "observaciones" || item.id === "pin-input") continue; // Campos opcionales
+                if (item.id === "observaciones" || item.id === "pin-input" || item.type === "password") continue;
                 if (item.value.trim() === "") {
-                    // Buscamos el texto amigable de la etiqueta
                     const grupo = item.closest('.campo-grupal');
                     const labelText = grupo ? grupo.querySelector('label').getAttribute('data-label') : item.id;
-                    alert("⚠️ CAMPO REQUERIDO VACIÓ: Por favor ingresa el valor de '" + labelText + "' antes de enviar la bitácora.");
-                    document.getElementById('status-cloud').innerText = "❌ Guardado cancelado: faltan datos";
+                    alert("⚠️ CAMPO VACÍO REQUERIDO: Ingresa '" + labelText + "' antes de enviar.");
+                    document.getElementById('status-cloud').innerText = "❌ Cancelado: Faltan datos";
                     item.focus();
                     return;
                 }
             }
 
-            // Validar firma
+            // Validar trazo de la firma
             if (!dibujoFirma && ctxFirma.getImageData(0,0,canvas.width,canvas.height).data.every(p => p === 0)) {
-                alert("⚠️ FIRMA OBLIGATORIA: El operador debe estampar su firma digital antes de enviar.");
+                alert("⚠️ FIRMA REQUERIDA: El operador debe estampar su firma digital.");
                 return;
             }
 
             document.getElementById('status-cloud').innerText = "📡 Solicitando Geolocalización Real...";
             const firmaImagenBase64 = canvas.toDataURL();
+            
             if (navigator.geolocation) {
+                let gpsResuelto = false;
+
+                // 🚨 CORTAFUEGOS GPS: Si el celular tarda más de 4 segundos en responder, salta la barrera
+                const gpsTimeout = setTimeout(() => {
+                    if (!gpsResuelto) {
+                        gpsResuelto = true;
+                        console.warn("Tiempo de espera agotado para el GPS. Guardando con firma certificada.");
+                        enviarDatosFinales("Sin señal GPS (Planta)", "Sin señal GPS (Planta)", firmaImagenBase64);
+                    }
+                }, 4000);
+
                 navigator.geolocation.getCurrentPosition(
                     async (position) => {
-                        const lat = position.coords.latitude.toFixed(5);
-                        const lon = position.coords.longitude.toFixed(5);
-                        await enviarDatosFinales(lat, lon, firmaImagenBase64);
+                        if (!gpsResuelto) {
+                            gpsResuelto = true;
+                            clearTimeout(gpsTimeout);
+                            const lat = position.coords.latitude.toFixed(5);
+                            const lon = position.coords.longitude.toFixed(5);
+                            await enviarDatosFinales(lat, lon, firmaImagenBase64);
+                        }
                     },
                     async (error) => {
-                        alert("⚠️ ERROR DE SEGURIDAD: Debes activar el GPS para certificar tu presencia física en la central.");
-                        document.getElementById('status-cloud').innerText = "❌ Bloqueado por falta de GPS";
-                    }, { enableHighAccuracy: true, timeout: 6000 }
+                        if (!gpsResuelto) {
+                            gpsResuelto = true;
+                            clearTimeout(gpsTimeout);
+                            // En lugar de bloquear la app si rechaza el GPS, le permitimos continuar certificando la presencia técnica por firma
+                            console.warn("GPS denegado por el dispositivo. Continuando con firma.");
+                            await enviarDatosFinales("Ubicación no autorizada", "Ubicación no autorizada", firmaImagenBase64);
+                        }
+                    }, { enableHighAccuracy: true, timeout: 3500 }
                 );
-            } else { alert("Tu dispositivo no soporta localización."); }
+            } else { 
+                enviarDatosFinales("GPS no soportado", "GPS no soportado", firmaImagenBase64); 
+            }
         }
 
         async function enviarDatosFinales(lat, lon, firma) {
+            document.getElementById('status-cloud').innerText = "🚀 Guardando en el servidor...";
             const fecha = document.getElementById('fecha').value;
             const turno = document.getElementById('turno').value;
             const h = parseInt(document.getElementById('agua_horas_entero').value) || 0;
@@ -464,7 +486,7 @@
                 observaciones: document.getElementById('observaciones').value,
                 
                 ci_presion_salida: parseFloat(document.getElementById('ci_presion_salida').value) || null,
-                ci_volt_bateria: parseFloat(document.getElementById('ci_volt_bateria_1').value) || null, // Sincronizado
+                ci_volt_bateria: parseFloat(document.getElementById('ci_volt_bateria_1').value) || null,
                 ci_volt_bateria_1: parseFloat(document.getElementById('ci_volt_bateria_1').value) || null,
                 ci_volt_bateria_2: parseFloat(document.getElementById('ci_volt_bateria_2').value) || null, 
                 ci_nivel_tk_diesel: document.getElementById('ci_nivel_tk_diesel').value,
@@ -507,13 +529,12 @@
                 agua_horas_operacion: stringHorasAgua,
                 agua_planta_en_servicio: document.getElementById('agua_planta_en_servicio').value,
                 
-                // 🔄 AJUSTE DE MAPEO DIRECTO: Subidos como texto para evitar rechazos numéricos de Supabase
                 comb_nivel_tanque_a: document.getElementById('comb_nivel_tanque_a').value,
                 comb_nivel_tanque_b: document.getElementById('comb_nivel_tanque_b').value,
                 comb_tanque_alineado: document.getElementById('comb_tanque_alineado').value,
                 comb_valvulas_alineadas: document.getElementById('comb_valvulas_alineadas').value,
                 comb_proteccion_catodica: parseFloat(document.getElementById('comb_proteccion_catodica').value) || null,
-                comb_proteccion_catodica_amp: parseFloat(document.getElementById('comb_proteccion_catodica_amp').value) || null, // Sincronizado
+                comb_proteccion_catodica_amp: parseFloat(document.getElementById('comb_proteccion_catodica_amp').value) || null,
                 
                 cg_presion_entrada: parseFloat(document.getElementById('cg_presion_entrada').value) || null,
                 cg_temperatura_entrada: parseFloat(document.getElementById('cg_temperatura_entrada').value) || null,
@@ -526,8 +547,13 @@
             };
 
             const { error } = await _supabase.from('rondas_termica').insert([payload]);
-            if (!error) { alert("✅ Bitácora Termodorada sincronizada con éxito."); window.location.reload(); } 
-            else { alert("Error crítico al guardar: " + error.message); }
+            if (!error) { 
+                alert("✅ Bitácora Termodorada sincronizada con éxito."); 
+                window.location.reload(); 
+            } else { 
+                alert("Error crítico de base de datos: " + error.message); 
+                document.getElementById('status-cloud').innerText = "❌ Error al guardar en Supabase";
+            }
         }
 
         function actualizarGraficaAnalitica() {
