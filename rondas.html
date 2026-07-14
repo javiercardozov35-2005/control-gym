@@ -16,15 +16,24 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        // 🚨 ROMPE-CACHÉ V1.0.7: Fuerza la limpieza inmediata en el celular para aplicar las correcciones del GPS
+        // 🚨 ROMPE-CACHÉ V1.0.8: Actualización visual del indicador de versión activa
+        const VERSION_APP = "1.0.8"; 
+
         (function() {
-            const versionActual = "1.0.7"; 
             const versionGuardada = localStorage.getItem('app_version');
-            if (versionGuardada !== versionActual) {
-                localStorage.setItem('app_version', versionActual);
+            if (versionGuardada !== VERSION_APP) {
+                localStorage.setItem('app_version', VERSION_APP);
                 window.location.reload(true);
             }
         })();
+
+        // Función manual para limpiar caché si se queda pegado
+        function forzarRefrescoManual() {
+            if(confirm("¿Deseas forzar la recarga limpia de la aplicación para buscar actualizaciones en GitHub?")) {
+                localStorage.removeItem('app_version');
+                window.location.reload(true);
+            }
+        }
     </script>
     
     <style>
@@ -95,6 +104,11 @@
         
         .bloque-fila-celular { display: block; margin-top: 10px; }
         .bloque-fila-celular > div { margin-bottom: 12px; }
+
+        .tag-version {
+            font-size: 11px; color: var(--text-dim); background: #1e293b; padding: 4px 8px; border-radius: 10px; margin-top: 15px; cursor: pointer; display: inline-block; border: 1px dashed #334155;
+        }
+        .tag-version:hover { color: var(--accent); border-color: var(--accent); }
     </style>
 </head>
 <body>
@@ -106,13 +120,16 @@
         <input type="password" id="pin-input" placeholder="Ingresa tu PIN de Operador" pattern="[0-9]*" inputmode="numeric" style="text-align: center; max-width: 280px; font-size: 20px; letter-spacing: 4px;">
         <button class="btn-main" onclick="verificarPINBaseDatos()" style="max-width: 280px; margin-top: 10px;">Ingresar Firma Digital</button>
         <p id="error-msg" style="color: var(--danger); margin-top: 10px; display: none;">❌ PIN Inválido o Desactivado</p>
+        
+        <!-- ✨ INDICADOR DE VERSIÓN ACTIVA (PANTALLA BLOQUEO) -->
+        <div class="tag-version" onclick="forzarRefrescoManual()">Versión Activa: <span id="ver-bloqueo">...</span> 🔄</div>
     </div>
 
     <!-- CONTENIDO APP -->
     <div id="contenido-app" style="display: none;">
         <div class="header-app">
             <div>
-                <h3 style="margin:0; font-size:15px;">⚙️ TERMODORADA</h3>
+                <h3 style="margin:0; font-size:15px;">⚙️ TERMODORADA <span id="ver-cabecera" style="font-size: 10px; color: var(--accent); font-weight: normal; margin-left:5px;">...</span></h3>
                 <span id="label-operador-activo" style="font-size:12px; color:var(--success); font-weight:bold;">👷 Cargas...</span>
             </div>
             <button onclick="cerrarSesion()" style="width: auto; padding: 6px 12px; font-size: 11px; background: var(--danger); color: #fff; margin:0;">🔒 Bloquear</button>
@@ -234,7 +251,6 @@
             <!-- 8. TANQUES DE COMBUSTIBLE -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-comb')">⛽ 8. Tanques de Combustible <span>▼</span></button>
             <div id="sec-comb" class="seccion-contenido">
-                <!-- Cambiados a type="text" para permitir compatibilidad total con formatos de texto antiguos de Supabase sin crasheos en validación -->
                 <div class="campo-grupal"><label data-label="Combustible: Nivel Tanque A">Tanque A (Mts y Cm, ej: 6.31)</label><input type="text" id="comb_nivel_tanque_a" placeholder="0.00"></div>
                 <div class="campo-grupal"><label data-label="Combustible: Nivel Tanque B">Tanque B (Mts y Cm, ej: 6.31)</label><input type="text" id="comb_nivel_tanque_b" placeholder="0.00"></div>
                 <div class="campo-grupal"><label data-label="Combustible: Válvulas Alineadas">Válvulas Alineadas:</label><select id="comb_valvulas_alineadas"><option value="SI">SI</option><option value="NO">NO</option></select></div>
@@ -342,6 +358,10 @@
         let dibujoFirma = false;
         let canvas, ctxFirma;
 
+        // Inyectar versión en el HTML
+        document.getElementById('ver-bloqueo').innerText = VERSION_APP;
+        document.getElementById('ver-cabecera').innerText = "v" + VERSION_APP;
+
         if (sessionStorage.getItem('auth_operador')) { operadorActivo = sessionStorage.getItem('auth_operador'); mostrarApp(); }
 
         async function verificarPINBaseDatos() {
@@ -413,7 +433,6 @@
         }
 
         function subirRondaConFirmaYGPS() {
-            // 📝 VALIDACIÓN ESTRICTA DE ENTRADAS ANTES DE LANZAR GPS
             const inputs = document.querySelectorAll("#tab-nueva input, #tab-nueva select");
             for (let item of inputs) {
                 if (item.id === "observaciones" || item.id === "pin-input" || item.type === "password") continue;
@@ -427,7 +446,6 @@
                 }
             }
 
-            // Validar trazo de la firma
             if (!dibujoFirma && ctxFirma.getImageData(0,0,canvas.width,canvas.height).data.every(p => p === 0)) {
                 alert("⚠️ FIRMA REQUERIDA: El operador debe estampar su firma digital.");
                 return;
@@ -439,7 +457,6 @@
             if (navigator.geolocation) {
                 let gpsResuelto = false;
 
-                // 🚨 CORTAFUEGOS GPS: Si el celular tarda más de 4 segundos en responder, salta la barrera
                 const gpsTimeout = setTimeout(() => {
                     if (!gpsResuelto) {
                         gpsResuelto = true;
@@ -462,7 +479,6 @@
                         if (!gpsResuelto) {
                             gpsResuelto = true;
                             clearTimeout(gpsTimeout);
-                            // En lugar de bloquear la app si rechaza el GPS, le permitimos continuar certificando la presencia técnica por firma
                             console.warn("GPS denegado por el dispositivo. Continuando con firma.");
                             await enviarDatosFinales("Ubicación no autorizada", "Ubicación no autorizada", firmaImagenBase64);
                         }
