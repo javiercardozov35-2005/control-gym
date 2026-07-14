@@ -3,12 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>TERMODORADA | Sistema de Rondas Integral</title>
+    <title>TERMODORADA | Sistema de Rondas Seguro</title>
+    
+    <!-- 🔄 CONTROL ESTRICTO DE NO-CACHÉ PARA ACCESOS DIRECTOS -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // 🚨 SCRIPT ROMPE-CACHÉ: Fuerza al acceso directo a actualizarse automáticamente si el código cambia
+        (function() {
+            const versionActual = "1.0.4"; // Incrementamos este número internamente para obligar al cel a renovarse
+            const versionGuardada = localStorage.getItem('app_version');
+            
+            if (versionGuardada !== versionActual) {
+                localStorage.setItem('app_version', versionActual);
+                // Añade un parámetro de tiempo aleatorio a la URL para engañar a la caché del celular y forzar la descarga
+                window.location.reload(true);
+            }
+        })();
+    </script>
     
     <style>
         :root {
@@ -175,7 +195,7 @@
                 <div class="campo-grupal"><label>Chgr Output Amp (0 - 15 AMP)</label><input type="number" id="bop_chgr_output_amp" step="any" oninput="validarRango(this, 0, 15)"></div>
                 <div class="campo-grupal"><label>Main Switch (0 - 1)</label><input type="number" id="bop_main_switch" step="any" oninput="validarRango(this, 0, 1)"></div>
                 <div class="campo-grupal"><label>Select Switch:</label><select id="bop_select_switch"><option value="1 (BOOST)">1 (BOOST)</option><option value="2 (EQUAL)">2 (EQUAL)</option></select></div>
-                <div class="campo-grupal"><label>Nivel Baterías:</label><select id="bop_nivel_baterias"><option value="MAX">MAX</option><option value="MIN">MIN</option></select></div>
+                <div class="campo-grupal"><label>Estado Baterías:</label><select id="bop_nivel_baterias"><option value="MAX">MAX</option><option value="MIN">MIN</option></select></div>
                 <div class="campo-grupal"><label>Sistema CCM Disponible:</label><select id="bop_sistema_ccm_disponible"><option value="SI">SI</option><option value="NO">NO</option></select></div>
             </div>
 
@@ -310,7 +330,6 @@
         let rondasCargadas = [];
         let chartAnalitico = null;
         let dibujoFirma = false;
-
         let canvas, ctxFirma;
 
         if (sessionStorage.getItem('auth_operador')) { operadorActivo = sessionStorage.getItem('auth_operador'); mostrarApp(); }
@@ -329,7 +348,6 @@
             document.getElementById('label-operador-activo').innerText = "👷 " + operadorActivo;
             document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
             
-            // 🔒 INICIALIZACIÓN PROTEGIDA: Solo arranca cuando la app es visible
             canvas = document.getElementById('canvasFirma');
             ctxFirma = canvas.getContext('2d');
             canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
@@ -363,7 +381,7 @@
         }
 
         async function cargarDatosPlanta() {
-            document.getElementById('status-cloud').innerText = "🔄 Sincronizando Red Térmica...";
+            document.getElementById('status-cloud').innerText = "🔄 Sincronizando Red Técnico-Operativa...";
             try {
                 const { data, error } = await _supabase.from('rondas_termica').select('*').order('created_at', { ascending: true });
                 if(!error) { 
@@ -414,8 +432,9 @@
                 observaciones: document.getElementById('observaciones').value,
                 
                 ci_presion_salida: parseFloat(document.getElementById('ci_presion_salida').value) || null,
+                ci_volt_bateria: parseFloat(document.getElementById('ci_volt_bateria_1').value) || null, 
                 ci_volt_bateria_1: parseFloat(document.getElementById('ci_volt_bateria_1').value) || null,
-                ci_volt_bateria_2: parseFloat(document.getElementById('ci_volt_bateria_2').value) || null,
+                ci_volt_bateria_2: parseFloat(document.getElementById('ci_volt_bateria_2').value) || null, 
                 ci_nivel_tk_diesel: document.getElementById('ci_nivel_tk_diesel').value,
                 ci_nivel_tk_agua: parseFloat(document.getElementById('ci_nivel_tk_agua').value) || null,
                 ci_prueba_bomba_diesel: document.getElementById('ci_prueba_bomba_diesel').value,
@@ -474,7 +493,7 @@
 
             const { error } = await _supabase.from('rondas_termica').insert([payload]);
             if (!error) { alert("✅ Bitácora Termodorada sincronizada con éxito."); window.location.reload(); } 
-            else { alert("Error: " + error.message); }
+            else { alert("Error al guardar: " + error.message); }
         }
 
         function actualizarGraficaAnalitica() {
