@@ -11,13 +11,17 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Rondas Térmica">
+    
+    <!-- Icono de la App para el celular -->
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        // 🚨 ROMPE-CACHÉ V1.0.8: Actualización visual del indicador de versión activa
-        const VERSION_APP = "1.0.8"; 
+        // 🚨 ROMPE-CACHÉ V1.0.9: Agregada lógica de auto-instalador nativo PWA
+        const VERSION_APP = "1.0.9"; 
 
         (function() {
             const versionGuardada = localStorage.getItem('app_version');
@@ -27,7 +31,6 @@
             }
         })();
 
-        // Función manual para limpiar caché si se queda pegado
         function forzarRefrescoManual() {
             if(confirm("¿Deseas forzar la recarga limpia de la aplicación para buscar actualizaciones en GitHub?")) {
                 localStorage.removeItem('app_version');
@@ -108,7 +111,14 @@
         .tag-version {
             font-size: 11px; color: var(--text-dim); background: #1e293b; padding: 4px 8px; border-radius: 10px; margin-top: 15px; cursor: pointer; display: inline-block; border: 1px dashed #334155;
         }
-        .tag-version:hover { color: var(--accent); border-color: var(--accent); }
+        
+        /* ✨ BANNER DE INSTALACIÓN DIRECTA */
+        .banner-instalador {
+            background: linear-gradient(135deg, #1e3a8a, #0f172a); border: 2px solid var(--accent);
+            padding: 15px; border-radius: 12px; margin-top: 20px; max-width: 320px; text-align: left; display: none;
+        }
+        .banner-instalador h4 { margin: 0 0 5px 0; color: #fff; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .banner-instalador p { margin: 0; color: var(--text-dim); font-size: 12px; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -121,7 +131,13 @@
         <button class="btn-main" onclick="verificarPINBaseDatos()" style="max-width: 280px; margin-top: 10px;">Ingresar Firma Digital</button>
         <p id="error-msg" style="color: var(--danger); margin-top: 10px; display: none;">❌ PIN Inválido o Desactivado</p>
         
-        <!-- ✨ INDICADOR DE VERSIÓN ACTIVA (PANTALLA BLOQUEO) -->
+        <!-- 📲 ASISTENTE DE INSTALACIÓN AUTOMÁTICA -->
+        <div id="banner-pwa" class="banner-instalador">
+            <h4>📲 Instalar App en Pantalla</h4>
+            <p id="pwa-instrucciones">Cargando asistente de instalación rápida...</p>
+            <button id="btn-pwa-android" class="btn-main" style="display:none; margin-top:10px; padding:8px; font-size:13px; background:var(--success);">📥 Añadir a Inicio</button>
+        </div>
+
         <div class="tag-version" onclick="forzarRefrescoManual()">Versión Activa: <span id="ver-bloqueo">...</span> 🔄</div>
     </div>
 
@@ -357,10 +373,43 @@
         let chartAnalitico = null;
         let dibujoFirma = false;
         let canvas, ctxFirma;
+        let deferredPrompt; // Manejador de instalación de Android
 
-        // Inyectar versión en el HTML
         document.getElementById('ver-bloqueo').innerText = VERSION_APP;
         document.getElementById('ver-cabecera').innerText = "v" + VERSION_APP;
+
+        // LÓGICA DETECTORA DE INSTALACIÓN (AUTO-INSTALADOR)
+        window.addEventListener('DOMContentLoaded', () => {
+            const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const esStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            const banner = document.getElementById('banner-pwa');
+            const txtInstrucciones = document.getElementById('pwa-instrucciones');
+
+            if (!esStandalone) {
+                banner.style.display = "block";
+                if (esIOS) {
+                    txtInstrucciones.innerHTML = "Para instalar en tu iPhone:<br>1. Toca el botón <b>Compartir</b> (cuadrado con flecha arriba).<br>2. Selecciona <b>'Agregar a inicio'</b> 📲.";
+                } else {
+                    txtInstrucciones.innerText = "Haz clic en el botón de abajo para instalar el sistema como aplicación directa de escritorio.";
+                }
+            }
+        });
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); deferredPrompt = e;
+            const btnAndroid = document.getElementById('btn-pwa-android');
+            if(btnAndroid) {
+                btnAndroid.style.display = "block";
+                btnAndroid.addEventListener('click', async () => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        if (outcome === 'accepted') { document.getElementById('banner-pwa').style.display = 'none'; }
+                        deferredPrompt = null;
+                    }
+                });
+            }
+        });
 
         if (sessionStorage.getItem('auth_operador')) { operadorActivo = sessionStorage.getItem('auth_operador'); mostrarApp(); }
 
@@ -460,7 +509,6 @@
                 const gpsTimeout = setTimeout(() => {
                     if (!gpsResuelto) {
                         gpsResuelto = true;
-                        console.warn("Tiempo de espera agotado para el GPS. Guardando con firma certificada.");
                         enviarDatosFinales("Sin señal GPS (Planta)", "Sin señal GPS (Planta)", firmaImagenBase64);
                     }
                 }, 4000);
@@ -479,7 +527,6 @@
                         if (!gpsResuelto) {
                             gpsResuelto = true;
                             clearTimeout(gpsTimeout);
-                            console.warn("GPS denegado por el dispositivo. Continuando con firma.");
                             await enviarDatosFinales("Ubicación no autorizada", "Ubicación no autorizada", firmaImagenBase64);
                         }
                     }, { enableHighAccuracy: true, timeout: 3500 }
