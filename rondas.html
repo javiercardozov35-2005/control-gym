@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>TERMODORADA | Sistema de Rondas Seguro</title>
     
-    <!-- 🔄 CONTROL ESTRICTO DE NO-CACHÉ PARA ACCESOS DIRECTOS -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -17,14 +16,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        // 🚨 SCRIPT ROMPE-CACHÉ: Fuerza al acceso directo a actualizarse automáticamente si el código cambia
+        // 🚨 ROMPE-CACHÉ V1.0.5: Obliga al acceso directo a limpiar su memoria y tomar los nuevos cambios
         (function() {
-            const versionActual = "1.0.4"; // Incrementamos este número internamente para obligar al cel a renovarse
+            const versionActual = "1.0.5"; 
             const versionGuardada = localStorage.getItem('app_version');
-            
             if (versionGuardada !== versionActual) {
                 localStorage.setItem('app_version', versionActual);
-                // Añade un parámetro de tiempo aleatorio a la URL para engañar a la caché del celular y forzar la descarga
                 window.location.reload(true);
             }
         })();
@@ -195,7 +192,15 @@
                 <div class="campo-grupal"><label>Chgr Output Amp (0 - 15 AMP)</label><input type="number" id="bop_chgr_output_amp" step="any" oninput="validarRango(this, 0, 15)"></div>
                 <div class="campo-grupal"><label>Main Switch (0 - 1)</label><input type="number" id="bop_main_switch" step="any" oninput="validarRango(this, 0, 1)"></div>
                 <div class="campo-grupal"><label>Select Switch:</label><select id="bop_select_switch"><option value="1 (BOOST)">1 (BOOST)</option><option value="2 (EQUAL)">2 (EQUAL)</option></select></div>
-                <div class="campo-grupal"><label>Estado Baterías:</label><select id="bop_nivel_baterias"><option value="MAX">MAX</option><option value="MIN">MIN</option></select></div>
+                <!-- 🔄 CAMBIO: Estado Baterías con Bueno / Regular / Malo -->
+                <div class="campo-grupal">
+                    <label>Estado Baterías:</label>
+                    <select id="bop_nivel_baterias">
+                        <option value="Bueno">🟢 Bueno</option>
+                        <option value="Regular">🟡 Regular</option>
+                        <option value="Malo">🔴 Malo</option>
+                    </select>
+                </div>
                 <div class="campo-grupal"><label>Sistema CCM Disponible:</label><select id="bop_sistema_ccm_disponible"><option value="SI">SI</option><option value="NO">NO</option></select></div>
             </div>
 
@@ -427,14 +432,14 @@
             const m = parseInt(document.getElementById('agua_minutos_entero').value) || 0;
             const stringHorasAgua = String(h).padStart(2, '0') + ":" + String(m).padStart(2, '0');
 
+            // ⚡ ESTRUCTURA SINCRONIZADA CON SUPABASE
             const payload = {
                 fecha, turno, operador: operadorActivo, latitud: lat, longitud: lon, firma_base64: firma,
                 observaciones: document.getElementById('observaciones').value,
                 
                 ci_presion_salida: parseFloat(document.getElementById('ci_presion_salida').value) || null,
-                ci_volt_bateria: parseFloat(document.getElementById('ci_volt_bateria_1').value) || null, 
                 ci_volt_bateria_1: parseFloat(document.getElementById('ci_volt_bateria_1').value) || null,
-                ci_volt_bateria_2: parseFloat(document.getElementById('ci_volt_bateria_2').value) || null, 
+                ci_volt_bateria_2: parseFloat(document.getElementById('ci_volt_bateria_2').value) || null,
                 ci_nivel_tk_diesel: document.getElementById('ci_nivel_tk_diesel').value,
                 ci_nivel_tk_agua: parseFloat(document.getElementById('ci_nivel_tk_agua').value) || null,
                 ci_prueba_bomba_diesel: document.getElementById('ci_prueba_bomba_diesel').value,
