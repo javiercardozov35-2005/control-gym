@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>MAJO CARDOZO | Facial Care & Control</title>
+    
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Estética Majo">
+    
+    <!-- Icono estético para la pantalla de inicio -->
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        const VERSION_APP = "1.0.0"; 
+
+        (function() {
+            const versionGuardada = localStorage.getItem('estetica_version');
+            if (versionGuardada !== VERSION_APP) {
+                localStorage.setItem('estetica_version', VERSION_APP);
+                window.location.reload(true);
+            }
+        })();
+
+        function forzarRefrescoManual() {
+            if(confirm("¿Deseas recargar la aplicación para buscar actualizaciones en tu servidor?")) {
+                localStorage.removeItem('estetica_version');
+                window.location.reload(true);
+            }
+        }
+    </script>
+    
+    <style>
+        :root {
+            --bg-color: #faf5f5; /* Tono rosa pálido muy delicado para estética */
+            --card-bg: #ffffff;
+            --accent: #d4af37;  /* Dorado elegante */
+            --accent-soft: #fbf6e9;
+            --text: #4a3e3e;
+            --text-dim: #8c7a7a;
+            --danger: #e06d6d;
+            --success: #82bda2;
+            --border: #f0e2e2;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color); color: var(--text); margin: 0; padding: 15px; padding-bottom: 80px;
+        }
+        h2, h3 { margin: 0 0 5px 0; color: var(--text); font-weight: 600; }
+        .card {
+            background: var(--card-bg); padding: 15px; border-radius: 16px; margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(132, 95, 95, 0.08); border: 1px solid var(--border);
+        }
+        .header-app { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        input, button, select, textarea {
+            width: 100%; padding: 12px; margin: 6px 0; border-radius: 10px; border: none; box-sizing: border-box; font-size: 16px;
+        }
+        input, select, textarea { background: #fff; color: var(--text); border: 1px solid var(--border); }
+        input:focus, select:focus { border: 1px solid var(--accent); outline: none; }
+        
+        button.btn-main { background: var(--accent); color: #fff; font-weight: bold; cursor: pointer; }
+        button.btn-secondary { background: #ededed; color: var(--text); font-weight: bold; }
+        
+        .seccion-btn {
+            background: var(--card-bg); color: var(--text); text-align: left; font-weight: bold; font-size: 15px;
+            padding: 14px; border-radius: 10px; margin: 8px 0; border-left: 5px solid var(--accent); display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02); cursor: pointer; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); border-right: 1px solid var(--border);
+        }
+        .seccion-contenido { display: none; padding: 10px 5px; background: #fff; border-radius: 0 0 10px 10px; margin-top: -8px; margin-bottom: 10px; border: 1px solid var(--border); }
+        
+        .campo-grupal { margin-bottom: 12px; }
+        .campo-grupal label { font-size: 14px; color: var(--text-dim); display: block; margin-bottom: 4px; font-weight: 500; }
+
+        #pantalla-bloqueo {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-color); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px; text-align: center;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-bar {
+            position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background: #ffffff; border-top: 1px solid var(--border);
+            display: flex; justify-content: space-around; align-items: center; z-index: 999;
+        }
+        .tab-button {
+            background: none; color: var(--text-dim); border: none; font-size: 12px; display: flex; flex-direction: column; align-items: center; width: auto; margin:0; cursor: pointer;
+        }
+        .tab-button.active { color: var(--accent); font-weight: bold; }
+        
+        .canvas-firma {
+            background: #fafafa; border: 1px dashed var(--accent); border-radius: 10px; cursor: crosshair; touch-action: none; width: 100%; height: 120px;
+        }
+        
+        .tag-version {
+            font-size: 11px; color: var(--text-dim); background: #fff; padding: 4px 8px; border-radius: 10px; margin-top: 15px; cursor: pointer; display: inline-block; border: 1px dashed var(--border);
+        }
+        
+        .banner-instalador {
+            background: linear-gradient(135deg, #fff, var(--accent-soft)); border: 1px solid var(--accent);
+            padding: 15px; border-radius: 12px; margin-top: 20px; max-width: 320px; text-align: left; display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .banner-instalador h4 { margin: 0 0 5px 0; color: var(--text); font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .banner-instalador p { margin: 0; color: var(--text-dim); font-size: 12px; line-height: 1.4; }
+
+        /* Estilo balance general */
+        .grid-balance { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .balance-box { padding: 15px; border-radius: 12px; text-align: center; color: #fff; }
+        .bg-ingresos { background: var(--success); }
+        .bg-egresos { background: var(--danger); }
+        .bg-total { background: var(--accent); grid-column: span 2; }
+    </style>
+</head>
+<body>
+
+    <!-- PANTALLA DE ACCESO -->
+    <div id="pantalla-bloqueo">
+        <h2 style="letter-spacing: 1px; font-weight: 300; font-size: 26px;">✨ MAJO CARDOZO</h2>
+        <p style="color: var(--text-dim); font-size: 11px; margin-top: 2px; margin-bottom: 25px; letter-spacing: 2px; text-transform: uppercase;">Cosmiatría Facial</p>
+        <input type="password" id="pin-input" placeholder="Ingresar contraseña" pattern="[0-9]*" inputmode="numeric" style="text-align: center; max-width: 280px; font-size: 20px; letter-spacing: 4px; border-radius: 12px;">
+        <button class="btn-main" onclick="verificarPINEstetica()" style="max-width: 280px; margin-top: 10px;">Ingresar al Consultorio</button>
+        <p id="error-msg" style="color: var(--danger); margin-top: 10px; display: none;">❌ Contraseña Incorrecta</p>
+        
+        <!-- AUTO-INSTALADOR PWA -->
+        <div id="banner-pwa" class="banner-instalador">
+            <h4>🌸 Instalar App en tu celular</h4>
+            <p id="pwa-instrucciones">Cargando instrucciones...</p>
+            <button id="btn-pwa-android" class="btn-main" style="display:none; margin-top:10px; padding:8px; font-size:13px; background:var(--success);">📥 Añadir a Pantalla de Inicio</button>
+        </div>
+
+        <div class="tag-version" onclick="forzarRefrescoManual()">Versión: <span id="ver-bloqueo">...</span> 🔄</div>
+    </div>
+
+    <!-- CONTENIDO CONSULTORIO -->
+    <div id="contenido-app" style="display: none;">
+        <div class="header-app">
+            <div>
+                <h3 style="margin:0; font-size:16px;">🌸 Majo Cardozo</h3>
+                <span style="font-size:12px; color:var(--text-dim); font-weight:bold;">✨ Consultorio Activo</span>
+            </div>
+            <button onclick="cerrarSesion()" style="width: auto; padding: 6px 12px; font-size: 11px; background: var(--danger); color: #fff; margin:0;">🔒 Bloquear</button>
+        </div>
+
+        <!-- PESTAÑA 1: CAJA (INGRESOS Y EGRESOS) -->
+        <div id="tab-caja" class="tab-content active">
+            
+            <div class="grid-balance">
+                <div class="balance-box bg-ingresos">
+                    <span style="font-size: 11px; display:block;">INGRESOS</span>
+                    <b id="lbl-ingresos" style="font-size: 18px;">$0</b>
+                </div>
+                <div class="balance-box bg-egresos">
+                    <span style="font-size: 11px; display:block;">EGRESOS</span>
+                    <b id="lbl-egresos" style="font-size: 18px;">$0</b>
+                </div>
+                <div class="balance-box bg-total">
+                    <span style="font-size: 11px; display:block;">GANANCIA NETO</span>
+                    <b id="lbl-neto" style="font-size: 22px;">$0</b>
+                </div>
+            </div>
+
+            <!-- REGISTRAR SERVICIO (INGRESO) -->
+            <button class="seccion-btn" onclick="toggleSeccion('sec-servicio')">💆‍♀️ Registrar Sesión de Paciente <span>▼</span></button>
+            <div id="sec-servicio" class="seccion-contenido">
+                <div class="campo-grupal"><label>Nombre de la Paciente:</label><input type="text" id="p_paciente" placeholder="Ej: Diana Pérez"></div>
+                <div class="campo-grupal">
+                    <label>Tratamiento / Servicio:</label>
+                    <select id="p_servicio">
+                        <option value="Limpieza Facial Profunda">💆‍♀️ Limpieza Facial Profunda</option>
+                        <option value="Tratamiento Hidratación Ice Blue">❄️ Hidratación Ice Blue</option>
+                        <option value="Dermapen Rejuvenecimiento">✨ Dermapen Rejuvenecimiento</option>
+                        <option value="Peeling Químico">🧪 Peeling Químico</option>
+                        <option value="Otro Tratamiento">🌸 Otro Tratamiento</option>
+                    </select>
+                </div>
+                <div class="campo-grupal"><label>Valor Total del Tratamiento ($):</label><input type="number" id="p_total" placeholder="150000" oninput="calcularSaldoPendiente()"></div>
+                <div class="campo-grupal"><label>Valor Abonado Hoy ($):</label><input type="number" id="p_abonado" placeholder="100000" oninput="calcularSaldoPendiente()"></div>
+                <div class="campo-grupal"><label>Saldo Pendiente (Por Cobrar):</label><input type="number" id="p_saldo" value="0" readonly style="background:#f4ecec;"></div>
+                <div class="campo-grupal">
+                    <label>Medio de Pago Abono:</label>
+                    <select id="p_metodo">
+                        <option value="Efectivo">💵 Efectivo</option>
+                        <option value="Transferencia (Nequi/Daviplata)">📱 Transferencia</option>
+                        <option value="Tarjeta">💳 Tarjeta Crédito/Débito</option>
+                    </select>
+                </div>
+                <div class="campo-grupal"><label>Observaciones de la Piel / Notas:</label><textarea id="p_observaciones" rows="2" placeholder="Paciente presenta piel sensible..."></textarea></div>
+                
+                <div class="campo-grupal">
+                    <label>Firma de la Paciente (Consentimiento):</label>
+                    <canvas id="canvasFirma" class="canvas-firma"></canvas>
+                    <button type="button" onclick="limpiarFirma()" style="background:#ededed; color:#4a3e3e; font-size:12px; padding:6px; margin-top:5px; width:auto;">🔄 Borrar Firma</button>
+                </div>
+
+                <button class="btn-main" onclick="guardarIngresoSesion()" style="margin-top:15px; background:var(--success);">✅ Guardar Sesión y Abono</button>
+            </div>
+
+            <!-- REGISTRAR GASTO / COMPRA (EGRESO) -->
+            <button class="seccion-btn" onclick="toggleSeccion('sec-gasto')">💸 Registrar Gasto o Compra <span>▼</span></button>
+            <div id="sec-gasto" class="seccion-contenido">
+                <div class="campo-grupal"><label>Concepto del Gasto:</label><input type="text" id="g_concepto" placeholder="Ej: Compra de toallas desechables, Arriendo, Luz"></div>
+                <div class="campo-grupal">
+                    <label>Clase de Gasto:</label>
+                    <select id="g_tipo">
+                        <option value="Insumos Faciales">🧴 Insumos Faciales</option>
+                        <option value="Servicios Públicos">💡 Servicios Públicos</option>
+                        <option value="Arriendo / Infraestructura">🏢 Arriendo / Infraestructura</option>
+                        <option value="Publicidad">📱 Publicidad</option>
+                        <option value="Otro">🌸 Otro</option>
+                    </select>
+                </div>
+                <div class="campo-grupal"><label>Monto Pagado ($):</label><input type="number" id="g_monto" placeholder="50000"></div>
+                <div class="campo-grupal">
+                    <label>Medio de Pago Usado:</label>
+                    <select id="g_metodo">
+                        <option value="Efectivo">💵 Efectivo</option>
+                        <option value="Transferencia">📱 Transferencia</option>
+                    </select>
+                </div>
+                <div class="campo-grupal"><label>Observaciones:</label><textarea id="g_observaciones" rows="1" placeholder="Compra hecha en distribuidora local..."></textarea></div>
+                
+                <button class="btn-main" onclick="guardarGastoEgresado()" style="margin-top:15px; background:var(--danger);">💸 Registrar Salida de Dinero</button>
+            </div>
+
+            <!-- MOVIMIENTOS RECIENTES -->
+            <div class="card" style="margin-top: 15px;">
+                <h3>📋 Actividad de Hoy</h3>
+                <div id="lista-actividad" style="max-height: 200px; overflow-y: auto; font-size: 13px;">Cargando...</div>
+            </div>
+
+        </div>
+
+        <!-- PESTAÑA 2: INVENTARIO DE VITRINA -->
+        <div id="tab-inventario" class="tab-content">
+            <!-- CREAR / EDITAR PRODUCTOS -->
+            <button class="seccion-btn" onclick="toggleSeccion('sec-nuevo-prod')">📦 Registrar Nuevo Producto en Vitrina <span>▼</span></button>
+            <div id="sec-nuevo-prod" class="seccion-contenido">
+                <div class="campo-grupal"><label>Nombre del Producto:</label><input type="text" id="i_nombre" placeholder="Ej: Bloqueador FPS 50 Majo Cardozo"></div>
+                <div class="campo-grupal"><label>Cantidad Inicial (Stock):</label><input type="number" id="i_stock" placeholder="10"></div>
+                <div class="campo-grupal"><label>Costo de Compra ($):</label><input type="number" id="i_costo" placeholder="25000"></div>
+                <div class="campo-grupal"><label>Precio de Venta ($):</label><input type="number" id="i_venta" placeholder="55000"></div>
+                <div class="campo-grupal">
+                    <label>Categoría:</label>
+                    <select id="i_categoria">
+                        <option value="Protección Solar">☀️ Protección Solar</option>
+                        <option value="Sérums e Hidratación">💧 Sérums e Hidratación</option>
+                        <option value="Limpieza / Tónicos">🧼 Limpieza / Tónicos</option>
+                        <option value="Mascarillas">💆‍♀️ Mascarillas</option>
+                    </select>
+                </div>
+                <button class="btn-main" onclick="guardarProductoInventario()" style="background:var(--accent);">📦 Guardar en Vitrina</button>
+            </div>
+
+            <!-- LISTADO DE INVENTARIO -->
+            <div class="card" style="margin-top:15px;">
+                <h3>🧴 Tus Productos de Belleza</h3>
+                <div id="lista-productos" style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
+                    Cargando vitrina...
+                </div>
+            </div>
+        </div>
+
+        <!-- BARRA DE PESTAÑAS -->
+        <div class="tab-bar">
+            <button class="tab-button active" onclick="cambiarPestaña('tab-caja', this)">💵 Caja Diaria</button>
+            <button class="tab-button" onclick="cambiarPestaña('tab-inventario', this)">🧴 Inventario</button>
+        </div>
+    </div>
+
+    <script>
+        // 🚨 CONFIGURA AQUÍ TUS CREDENCIALES DE SUPABASE
+        const SUPABASE_URL = "https://hvinbsrtwllpdppgxdpw.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_aLuAKNoFHcKZvb9jq2mAXw_8Ioa-vQJ";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let dibujoFirma = false;
+        let canvas, ctxFirma;
+        let deferredPrompt;
+
+        document.getElementById('ver-bloqueo').innerText = VERSION_APP;
+
+        // VERIFICAR PIN (Pines configurados en tu tabla 'operadores_termica' o PIN maestro local para pruebas)
+        function verificarPINEstetica() {
+            const pin = document.getElementById('pin-input').value;
+            // Configurar tu contraseña de acceso estético rápido (ej: 1234)
+            if(pin === "1234") {
+                sessionStorage.setItem('auth_estetica', 'true');
+                mostrarConsultorio();
+            } else {
+                document.getElementById('error-msg').style.display = 'block';
+                document.getElementById('pin-input').value = '';
+            }
+        }
+
+        if(sessionStorage.getItem('auth_estetica')) { mostrarConsultorio(); }
+
+        function mostrarConsultorio() {
+            document.getElementById('pantalla-bloqueo').style.display = 'none';
+            document.getElementById('contenido-app').style.display = 'block';
+            
+            // Inicializar lienzo de consentimiento facial
+            canvas = document.getElementById('canvasFirma');
+            ctxFirma = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
+            ctxFirma.strokeStyle = "#4a3e3e"; ctxFirma.lineWidth = 2.5;
+
+            canvas.addEventListener("touchstart", (e) => { dibujoFirma = true; ctxFirma.beginPath(); const t = e.touches[0]; ctxFirma.moveTo(t.clientX - canvas.getBoundingClientRect().left, t.clientY - canvas.getBoundingClientRect().top); });
+            canvas.addEventListener("touchmove", (e) => { if(!dibujoFirma) return; const t = e.touches[0]; ctxFirma.lineTo(t.clientX - canvas.getBoundingClientRect().left, t.clientY - canvas.getBoundingClientRect().top); ctxFirma.stroke(); });
+            canvas.addEventListener("touchend", () => dibujoFirma = false);
+
+            actualizarBalancesYActividad();
+            actualizarListaProductos();
+        }
+
+        function limpiarFirma() { ctxFirma.clearRect(0, 0, canvas.width, canvas.height); }
+        function cerrarSesion() { sessionStorage.removeItem('auth_estetica'); window.location.reload(); }
+        function toggleSeccion(id) { const sec = document.getElementById(id); sec.style.display = (sec.style.display === 'block') ? 'none' : 'block'; }
+        
+        function cambiarPestaña(tabId, boton) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active'); boton.classList.add('active');
+        }
+
+        function calcularSaldoPendiente() {
+            const total = parseFloat(document.getElementById('p_total').value) || 0;
+            const abono = parseFloat(document.getElementById('p_abonado').value) || 0;
+            document.getElementById('p_saldo').value = total - abono;
+        }
+
+        // GUARDAR SERVICIO / ABONO (INGRESO)
+        async function guardarIngresoSesion() {
+            const paciente = document.getElementById('p_paciente').value.trim();
+            const servicio = document.getElementById('p_servicio').value;
+            const total = parseFloat(document.getElementById('p_total').value) || 0;
+            const abonado = parseFloat(document.getElementById('p_abonado').value) || 0;
+            const saldo = parseFloat(document.getElementById('p_saldo').value) || 0;
+            const metodo = document.getElementById('p_metodo').value;
+            const obs = document.getElementById('p_observaciones').value;
+
+            if(!paciente || total <= 0 || abonado <= 0) {
+                alert("⚠️ Por favor ingresa el nombre de la paciente y el dinero recibido.");
+                return;
+            }
+
+            const firmaImg = canvas.toDataURL();
+
+            const { error } = await _supabase.from('estetica_pagos').insert([{
+                paciente, servicio, valor_total: total, valor_abonado: abonado, saldo_pendiente: saldo, metodo_pago: metodo, observaciones: obs, firma_paciente: firmaImg
+            }]);
+
+            if(!error) {
+                alert("✨ Sesión guardada de manera impecable.");
+                document.getElementById('p_paciente').value = '';
+                document.getElementById('p_total').value = '';
+                document.getElementById('p_abonado').value = '';
+                limpiarFirma();
+                actualizarBalancesYActividad();
+            } else {
+                alert("Error al guardar: " + error.message);
+            }
+        }
+
+        // GUARDAR GASTO / COMPRA (EGRESO)
+        async function guardarGastoEgresado() {
+            const concepto = document.getElementById('g_concepto').value.trim();
+            const tipo = document.getElementById('g_tipo').value;
+            const monto = parseFloat(document.getElementById('g_monto').value) || 0;
+            const metodo = document.getElementById('g_metodo').value;
+            const obs = document.getElementById('g_observaciones').value;
+
+            if(!concepto || monto <= 0) {
+                alert("⚠️ Ingresa el concepto y el valor del gasto realizado.");
+                return;
+            }
+
+            const { error } = await _supabase.from('estetica_gastos').insert([{
+                concepto, tipo_gasto: tipo, monto, metodo_pago: metodo, observaciones: obs
+            }]);
+
+            if(!error) {
+                alert("💸 Gasto restado correctamente.");
+                document.getElementById('g_concepto').value = '';
+                document.getElementById('g_monto').value = '';
+                document.getElementById('g_observaciones').value = '';
+                actualizarBalancesYActividad();
+            } else {
+                alert("Error al registrar gasto: " + error.message);
+            }
+        }
+
+        // GUARDAR PRODUCTO EN VITRINA
+        async function guardarProductoInventario() {
+            const nombre = document.getElementById('i_nombre').value.trim();
+            const stock = parseInt(document.getElementById('i_stock').value) || 0;
+            const costo = parseFloat(document.getElementById('i_costo').value) || 0;
+            const venta = parseFloat(document.getElementById('i_venta').value) || 0;
+            const cat = document.getElementById('i_categoria').value;
+
+            if(!nombre || stock <= 0 || venta <= 0) {
+                alert("⚠️ Llena los campos de tu producto de vitrina.");
+                return;
+            }
+
+            const { error } = await _supabase.from('estetica_inventario').insert([{
+                producto: nombre, stock, costo, precio_venta: venta, categoria: cat
+            }]);
+
+            if(!error) {
+                alert("🧴 Producto agregado exitosamente a tu vitrina.");
+                document.getElementById('i_nombre').value = '';
+                document.getElementById('i_stock').value = '';
+                document.getElementById('i_costo').value = '';
+                document.getElementById('i_venta').value = '';
+                actualizarListaProductos();
+            } else {
+                alert("Error de guardado: " + error.message);
+            }
+        }
+
+        // CARGAR BALANCE GLOBAL DE HOY Y ACTIVIDAD
+        async function actualizarBalancesYActividad() {
+            const { data: pagos } = await _supabase.from('estetica_pagos').select('valor_abonado, paciente, servicio, created_at');
+            const { data: gastos } = await _supabase.from('estetica_gastos').select('monto, concepto, created_at');
+
+            let totalIngresos = 0;
+            let totalEgresos = 0;
+
+            const listaActividad = document.getElementById('lista-actividad');
+            listaActividad.innerHTML = '';
+
+            let todosLosMovimientos = [];
+
+            if(pagos) {
+                pagos.forEach(p => {
+                    totalIngresos += parseFloat(p.valor_abonado);
+                    todosLosMovimientos.push({
+                        tipo: 'INGRESO',
+                        texto: `🟢 +$${p.valor_abonado} | ${p.paciente} (${p.servicio})`,
+                        fecha: new Date(p.created_at)
+                    });
+                });
+            }
+
+            if(gastos) {
+                gastos.forEach(g => {
+                    totalEgresos += parseFloat(g.monto);
+                    todosLosMovimientos.push({
+                        tipo: 'EGRESO',
+                        texto: `🔴 -$${g.monto} | Gasto: ${g.concepto}`,
+                        fecha: new Date(g.created_at)
+                    });
+                });
+            }
+
+            // Ordenar movimientos cronológicamente (más recientes arriba)
+            todosLosMovimientos.sort((a,b) => b.fecha - a.fecha);
+
+            if(todosLosMovimientos.length === 0) {
+                listaActividad.innerHTML = "<p style='color:var(--text-dim)'>No hay movimientos registrados hoy.</p>";
+            } else {
+                todosLosMovimientos.forEach(m => {
+                    listaActividad.innerHTML += `<div style="padding:8px 0; border-bottom:1px solid var(--border);">${m.texto}</div>`;
+                });
+            }
+
+            document.getElementById('lbl-ingresos').innerText = "$" + totalIngresos.toLocaleString();
+            document.getElementById('lbl-egresos').innerText = "$" + totalEgresos.toLocaleString();
+            document.getElementById('lbl-neto').innerText = "$" + (totalIngresos - totalEgresos).toLocaleString();
+        }
+
+        // VER VITRINA DE INVENTARIO
+        async function actualizarListaProductos() {
+            const { data: productos, error } = await _supabase.from('estetica_inventario').select('*').order('producto', { ascending: true });
+            const cont = document.getElementById('lista-productos');
+            cont.innerHTML = '';
+
+            if(!productos || productos.length === 0) {
+                cont.innerHTML = "<p style='color:var(--text-dim)'>Tu vitrina de productos está vacía.</p>";
+                return;
+            }
+
+            productos.forEach(p => {
+                const stockAlerta = p.stock <= 3 ? "color:var(--danger); font-weight:bold;" : "";
+                cont.innerHTML += `
+                    <div style="background:#fff; padding:12px; border:1px solid var(--border); border-radius:12px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <b style="font-size:14px; display:block;">${p.producto}</b>
+                            <span style="font-size:11px; color:var(--text-dim);">Venta: $${p.precio_venta.toLocaleString()} | Costo: $${p.costo.toLocaleString()}</span>
+                            <span style="font-size:12px; display:block; margin-top:2px; ${stockAlerta}">Existencias: ${p.stock} unidades</span>
+                        </div>
+                        <button onclick="venderUnidadRapida('${p.id}', '${p.producto}', ${p.precio_venta}, ${p.stock})" style="width:auto; padding:6px 12px; background:var(--accent); color:#fff; font-size:12px; margin:0;">🛒 Vender 1</button>
+                    </div>
+                `;
+            });
+        }
+
+        // DESCONTAR STOCK Y ENVIAR AL BALANCE DE INGRESOS AUTOMÁTICAMENTE
+        async function venderUnidadRapida(id, producto, precio, stockActual) {
+            if(stockActual <= 0) {
+                alert("⚠️ No te quedan unidades disponibles de este producto en tu vitrina.");
+                return;
+            }
+
+            if(confirm(`¿Deseas vender 1 unidad de '${producto}' y sumar $${precio} a tus ingresos?`)) {
+                // Descontar del inventario
+                const { error: errInv } = await _supabase.from('estetica_inventario').update({ stock: stockActual - 1 }).eq('id', id);
+                
+                // Sumar a la tabla de pagos de caja
+                const { error: errCaja } = await _supabase.from('estetica_pagos').insert([{
+                    paciente: "Venta Directa de Vitrina",
+                    servicio: `Compra: ${producto}`,
+                    valor_total: precio,
+                    valor_abonado: precio,
+                    saldo_pendiente: 0,
+                    metodo_pago: "Efectivo",
+                    observaciones: "Venta rápida de mostrador."
+                }]);
+
+                if(!errInv && !errCaja) {
+                    alert("🛒 ¡Venta registrada y sumada a tu caja del día!");
+                    actualizarBalancesYActividad();
+                    actualizarListaProductos();
+                } else {
+                    alert("Ocurrió un error al procesar la venta.");
+                }
+            }
+        }
+
+        // CONTROL PWA (AUTO-INSTALADOR)
+        window.addEventListener('DOMContentLoaded', () => {
+            const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const esStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            const banner = document.getElementById('banner-pwa');
+            const txtInstrucciones = document.getElementById('pwa-instrucciones');
+
+            if (!esStandalone) {
+                banner.style.display = "block";
+                if (esIOS) {
+                    txtInstrucciones.innerHTML = "Para instalar en tu iPhone:<br>1. Presiona el botón <b>Compartir</b> (cuadrado con flecha arriba).<br>2. Selecciona <b>'Agregar a inicio'</b> 📲.";
+                } else {
+                    txtInstrucciones.innerText = "Presiona el botón de abajo para instalar el sistema como aplicación directa de escritorio.";
+                }
+            }
+        });
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); deferredPrompt = e;
+            const btnAndroid = document.getElementById('btn-pwa-android');
+            if(btnAndroid) {
+                btnAndroid.style.display = "block";
+                btnAndroid.addEventListener('click', async () => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        if (outcome === 'accepted') { document.getElementById('banner-pwa').style.display = 'none'; }
+                        deferredPrompt = null;
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
