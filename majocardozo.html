@@ -11,7 +11,7 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Estética Majo">
+    <meta name="apple-mobile-web-app-title" content="Majo Cardozo">
     
     <!-- Icono estético para la pantalla de inicio -->
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
@@ -20,7 +20,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        const VERSION_APP = "1.0.0"; 
+        const VERSION_APP = "1.0.1"; 
 
         (function() {
             const versionGuardada = localStorage.getItem('estetica_version');
@@ -275,8 +275,7 @@
     </div>
 
     <script>
-        // 🚨 CONFIGURA AQUÍ TUS CREDENCIALES DE SUPABASE
-        const SUPABASE_URL = "https://hvinbsrtwllpdppgxdpw.supabase.co/rest/v1/";
+        const SUPABASE_URL = "https://hvinbsrtwllpdppgxdpw.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_aLuAKNoFHcKZvb9jq2mAXw_8Ioa-vQJ";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
@@ -286,10 +285,9 @@
 
         document.getElementById('ver-bloqueo').innerText = VERSION_APP;
 
-        // VERIFICAR PIN (Pines configurados en tu tabla 'operadores_termica' o PIN maestro local para pruebas)
+        // VERIFICAR PIN (Contraseña provisional: 1234)
         function verificarPINEstetica() {
             const pin = document.getElementById('pin-input').value;
-            // Configurar tu contraseña de acceso estético rápido (ej: 1234)
             if(pin === "1234") {
                 sessionStorage.setItem('auth_estetica', 'true');
                 mostrarConsultorio();
@@ -305,7 +303,6 @@
             document.getElementById('pantalla-bloqueo').style.display = 'none';
             document.getElementById('contenido-app').style.display = 'block';
             
-            // Inicializar lienzo de consentimiento facial
             canvas = document.getElementById('canvasFirma');
             ctxFirma = canvas.getContext('2d');
             canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
@@ -335,7 +332,6 @@
             document.getElementById('p_saldo').value = total - abono;
         }
 
-        // GUARDAR SERVICIO / ABONO (INGRESO)
         async function guardarIngresoSesion() {
             const paciente = document.getElementById('p_paciente').value.trim();
             const servicio = document.getElementById('p_servicio').value;
@@ -368,7 +364,6 @@
             }
         }
 
-        // GUARDAR GASTO / COMPRA (EGRESO)
         async function guardarGastoEgresado() {
             const concepto = document.getElementById('g_concepto').value.trim();
             const tipo = document.getElementById('g_tipo').value;
@@ -396,7 +391,6 @@
             }
         }
 
-        // GUARDAR PRODUCTO EN VITRINA
         async function guardarProductoInventario() {
             const nombre = document.getElementById('i_nombre').value.trim();
             const stock = parseInt(document.getElementById('i_stock').value) || 0;
@@ -425,7 +419,6 @@
             }
         }
 
-        // CARGAR BALANCE GLOBAL DE HOY Y ACTIVIDAD
         async function actualizarBalancesYActividad() {
             const { data: pagos } = await _supabase.from('estetica_pagos').select('valor_abonado, paciente, servicio, created_at');
             const { data: gastos } = await _supabase.from('estetica_gastos').select('monto, concepto, created_at');
@@ -460,7 +453,6 @@
                 });
             }
 
-            // Ordenar movimientos cronológicamente (más recientes arriba)
             todosLosMovimientos.sort((a,b) => b.fecha - a.fecha);
 
             if(todosLosMovimientos.length === 0) {
@@ -476,7 +468,6 @@
             document.getElementById('lbl-neto').innerText = "$" + (totalIngresos - totalEgresos).toLocaleString();
         }
 
-        // VER VITRINA DE INVENTARIO
         async function actualizarListaProductos() {
             const { data: productos, error } = await _supabase.from('estetica_inventario').select('*').order('producto', { ascending: true });
             const cont = document.getElementById('lista-productos');
@@ -502,7 +493,6 @@
             });
         }
 
-        // DESCONTAR STOCK Y ENVIAR AL BALANCE DE INGRESOS AUTOMÁTICAMENTE
         async function venderUnidadRapida(id, producto, precio, stockActual) {
             if(stockActual <= 0) {
                 alert("⚠️ No te quedan unidades disponibles de este producto en tu vitrina.");
@@ -510,10 +500,8 @@
             }
 
             if(confirm(`¿Deseas vender 1 unidad de '${producto}' y sumar $${precio} a tus ingresos?`)) {
-                // Descontar del inventario
                 const { error: errInv } = await _supabase.from('estetica_inventario').update({ stock: stockActual - 1 }).eq('id', id);
                 
-                // Sumar a la tabla de pagos de caja
                 const { error: errCaja } = await _supabase.from('estetica_pagos').insert([{
                     paciente: "Venta Directa de Vitrina",
                     servicio: `Compra: ${producto}`,
@@ -534,7 +522,6 @@
             }
         }
 
-        // CONTROL PWA (AUTO-INSTALADOR)
         window.addEventListener('DOMContentLoaded', () => {
             const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             const esStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
