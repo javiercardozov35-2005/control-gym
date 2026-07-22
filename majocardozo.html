@@ -13,6 +13,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Majo Cardozo">
     
+    <!-- Enlace al archivo Manifest PWA para habilitar instalación automática -->
+    <link rel="manifest" href="manifest.json">
+    
     <!-- Icono estético para la pantalla de inicio -->
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
     
@@ -20,7 +23,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        const VERSION_APP = "1.0.1"; 
+        // 🚨 VERSION 1.0.3: Vinculación oficial del archivo manifest.json para instalador nativo
+        const VERSION_APP = "1.0.3"; 
 
         (function() {
             const versionGuardada = localStorage.getItem('estetica_version');
@@ -81,7 +85,7 @@
 
         #pantalla-bloqueo {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-color); z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px; text-align: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px; text-align: center; overflow-y: auto;
         }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -104,7 +108,7 @@
         
         .banner-instalador {
             background: linear-gradient(135deg, #fff, var(--accent-soft)); border: 1px solid var(--accent);
-            padding: 15px; border-radius: 12px; margin-top: 20px; max-width: 320px; text-align: left; display: none;
+            padding: 15px; border-radius: 12px; margin-top: 20px; max-width: 300px; text-align: left; display: none;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
         .banner-instalador h4 { margin: 0 0 5px 0; color: var(--text); font-size: 14px; display: flex; align-items: center; gap: 8px; }
@@ -123,16 +127,16 @@
     <!-- PANTALLA DE ACCESO -->
     <div id="pantalla-bloqueo">
         <h2 style="letter-spacing: 1px; font-weight: 300; font-size: 26px;">✨ MAJO CARDOZO</h2>
-        <p style="color: var(--text-dim); font-size: 11px; margin-top: 2px; margin-bottom: 25px; letter-spacing: 2px; text-transform: uppercase;">Cosmiatría Facial</p>
+        <p style="color: var(--text-dim); font-size: 11px; margin-top: 2px; margin-bottom: 20px; letter-spacing: 2px; text-transform: uppercase;">Cosmiatría Facial</p>
         <input type="password" id="pin-input" placeholder="Ingresar contraseña" pattern="[0-9]*" inputmode="numeric" style="text-align: center; max-width: 280px; font-size: 20px; letter-spacing: 4px; border-radius: 12px;">
         <button class="btn-main" onclick="verificarPINEstetica()" style="max-width: 280px; margin-top: 10px;">Ingresar al Consultorio</button>
         <p id="error-msg" style="color: var(--danger); margin-top: 10px; display: none;">❌ Contraseña Incorrecta</p>
         
-        <!-- AUTO-INSTALADOR PWA -->
+        <!-- AUTO-INSTALADOR PWA GUIADO -->
         <div id="banner-pwa" class="banner-instalador">
-            <h4>🌸 Instalar App en tu celular</h4>
-            <p id="pwa-instrucciones">Cargando instrucciones...</p>
-            <button id="btn-pwa-android" class="btn-main" style="display:none; margin-top:10px; padding:8px; font-size:13px; background:var(--success);">📥 Añadir a Pantalla de Inicio</button>
+            <h4>🌸 Guardar App en Pantalla</h4>
+            <p id="pwa-instrucciones">Cargando asistente...</p>
+            <button id="btn-pwa-android" class="btn-main" style="display:none; margin-top:10px; padding:10px; font-size:13px; background:var(--success); border-radius:8px;">📥 Presiona para Instalar</button>
         </div>
 
         <div class="tag-version" onclick="forzarRefrescoManual()">Versión: <span id="ver-bloqueo">...</span> 🔄</div>
@@ -285,7 +289,6 @@
 
         document.getElementById('ver-bloqueo').innerText = VERSION_APP;
 
-        // VERIFICAR PIN (Contraseña provisional: 1234)
         function verificarPINEstetica() {
             const pin = document.getElementById('pin-input').value;
             if(pin === "1234") {
@@ -531,9 +534,9 @@
             if (!esStandalone) {
                 banner.style.display = "block";
                 if (esIOS) {
-                    txtInstrucciones.innerHTML = "Para instalar en tu iPhone:<br>1. Presiona el botón <b>Compartir</b> (cuadrado con flecha arriba).<br>2. Selecciona <b>'Agregar a inicio'</b> 📲.";
+                    txtInstrucciones.innerHTML = "<b>iPhone:</b> Toca el botón <b>Compartir</b> (cuadrado con flecha) y selecciona <b>'Agregar a inicio'</b> 📲.";
                 } else {
-                    txtInstrucciones.innerText = "Presiona el botón de abajo para instalar el sistema como aplicación directa de escritorio.";
+                    txtInstrucciones.innerHTML = "<b>Android:</b> Toca los <b>3 puntos arriba a la derecha</b> del navegador y elige <b>'Agregar a la pantalla principal'</b> o 'Instalar aplicación' 📲.";
                 }
             }
         });
