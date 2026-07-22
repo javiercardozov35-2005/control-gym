@@ -13,15 +13,15 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Rondas">
     
-    <!-- Icono de la App -->
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        // 🚨 ROMPE-CACHÉ V1.1.0: Corrección de coordenadas completas (Latitud, Longitud) en historial
-        const VERSION_APP = "1.1.0"; 
+        // 🚨 ROMPE-CACHÉ V1.2.0: Cambio de orden de plantas y Módulo de Auditoría/Edición Admin
+        const VERSION_APP = "1.2.0"; 
+        const PIN_ADMIN_ESTRICIONAL = "9999"; // 🔒 Clave para editar o corregir datos de rondas
 
         (function() {
             const versionGuardada = localStorage.getItem('app_version');
@@ -111,13 +111,14 @@
         .tag-version {
             font-size: 11px; color: var(--text-dim); background: #1e293b; padding: 4px 8px; border-radius: 10px; margin-top: 15px; cursor: pointer; display: inline-block; border: 1px dashed #334155;
         }
-        
-        .banner-instalador {
-            background: linear-gradient(135deg, #1e3a8a, #0f172a); border: 2px solid var(--accent);
-            padding: 15px; border-radius: 12px; margin-top: 20px; max-width: 320px; text-align: left; display: none;
+
+        .ronda-card-item {
+            background: #0f172a; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #334155; cursor: pointer;
         }
-        .banner-instalador h4 { margin: 0 0 5px 0; color: #fff; font-size: 14px; display: flex; align-items: center; gap: 8px; }
-        .banner-instalador p { margin: 0; color: var(--text-dim); font-size: 12px; line-height: 1.4; }
+        .ronda-card-item:hover { border-color: var(--accent); }
+        .grid-auditoria { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; margin-top: 10px; text-align: left; }
+        .item-audit { background: #1a2638; padding: 6px 8px; border-radius: 6px; border: 1px solid #2a3a52; }
+        .item-audit b { color: var(--accent); display: block; font-size: 10px; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -130,13 +131,6 @@
         <button class="btn-main" onclick="verificarPINBaseDatos()" style="max-width: 280px; margin-top: 10px;">Ingresar Firma Digital</button>
         <p id="error-msg" style="color: var(--danger); margin-top: 10px; display: none;">❌ PIN Inválido o Desactivado</p>
         
-        <!-- ASISTENTE DE INSTALACIÓN AUTOMÁTICA -->
-        <div id="banner-pwa" class="banner-instalador">
-            <h4>📲 Instalar App en Pantalla</h4>
-            <p id="pwa-instrucciones">Cargando asistente de instalación rápida...</p>
-            <button id="btn-pwa-android" class="btn-main" style="display:none; margin-top:10px; padding:8px; font-size:13px; background:var(--success);">📥 Añadir a Inicio</button>
-        </div>
-
         <div class="tag-version" onclick="forzarRefrescoManual()">Versión Activa: <span id="ver-bloqueo">...</span> 🔄</div>
     </div>
 
@@ -241,15 +235,8 @@
                 <div class="campo-grupal"><label data-label="Separador: Nivel Aceite">Nivel (0 - 1 MTS)</label><input type="number" id="sep_nivel" step="any" oninput="validarRango(this, 0, 1)"></div>
             </div>
 
-            <!-- 6. TRANSFORMADOR PRINCIPAL -->
-            <button class="seccion-btn" onclick="toggleSeccion('sec-trans')">⚡ 6. Transformador Principal <span>▼</span></button>
-            <div id="sec-trans" class="seccion-contenido">
-                <div class="campo-grupal"><label data-label="Transf: Temp Aceite">Temperatura de Aceite (15 - 100 °C)</label><input type="number" id="trans_temp_aceite" step="any" oninput="validarRango(this, 15, 100)"></div>
-                <div class="campo-grupal"><label data-label="Transf: Temp Devanado">Temperatura de Devanado (15 - 120 °C)</label><input type="number" id="trans_temp_devanado" step="any" oninput="validarRango(this, 15, 120)"></div>
-            </div>
-
-            <!-- 7. PLANTA DE AGUAS -->
-            <button class="seccion-btn" onclick="toggleSeccion('sec-agua')">💧 7. Planta de Aguas <span>▼</span></button>
+            <!-- 🔄 6. PLANTA DE AGUAS (REUBICADA ANTES DEL TRANSFORMADOR) -->
+            <button class="seccion-btn" onclick="toggleSeccion('sec-agua')">💧 6. Planta de Aguas <span>▼</span></button>
             <div id="sec-agua" class="seccion-contenido">
                 <div class="campo-grupal"><label data-label="Aguas: Presión Suministro">Presión Suministro (30 - 60 PSI)</label><input type="number" id="agua_presion_suministro" step="any" oninput="validarRango(this, 30, 60)"></div>
                 <div class="campo-grupal"><label data-label="Aguas: Nivel Tanque">Nivel Tanque (5 - 7.5 MTS)</label><input type="number" id="agua_nivel_tanque_almacen" step="any" oninput="validarRango(this, 5, 7.5)"></div>
@@ -261,6 +248,13 @@
                     </div>
                 </div>
                 <div class="campo-grupal"><label data-label="Aguas: Planta en Servicio">Planta en Servicio:</label><select id="agua_planta_en_servicio"><option value="Encendida">Encendida</option><option value="Apagada">Apagada</option></select></div>
+            </div>
+
+            <!-- 7. TRANSFORMADOR PRINCIPAL -->
+            <button class="seccion-btn" onclick="toggleSeccion('sec-trans')">⚡ 7. Transformador Principal <span>▼</span></button>
+            <div id="sec-trans" class="seccion-contenido">
+                <div class="campo-grupal"><label data-label="Transf: Temp Aceite">Temperatura de Aceite (15 - 100 °C)</label><input type="number" id="trans_temp_aceite" step="any" oninput="validarRango(this, 15, 100)"></div>
+                <div class="campo-grupal"><label data-label="Transf: Temp Devanado">Temperatura de Devanado (15 - 120 °C)</label><input type="number" id="trans_temp_devanado" step="any" oninput="validarRango(this, 15, 120)"></div>
             </div>
 
             <!-- 8. TANQUES DE COMBUSTIBLE -->
@@ -302,7 +296,7 @@
             </div>
         </div>
 
-        <!-- PESTAÑA ANALÍTICA -->
+        <!-- PESTAÑA ANALÍTICA Y AUDITORÍA -->
         <div id="tab-analitica" class="tab-content">
             <div class="card">
                 <h3>📈 Auditoría Operativa Temporal</h3>
@@ -350,9 +344,26 @@
                 <button class="btn-main" onclick="actualizarGraficaAnalitica()" style="margin-top:10px; padding:10px;">📊 Analizar vs Hora Real</button>
                 <div class="contenedor-grafica"><canvas id="graficaAnalitica"></canvas></div>
             </div>
+
+            <!-- 🔎 HISTORIAL Y VISUALIZADOR DE AUDITORÍA DETALLADA -->
             <div class="card">
-                <h3>📋 Historial de Auditoría</h3>
-                <div id="listaRondas" style="max-height: 180px; overflow-y: auto; font-size: 13px;">Cargando...</div>
+                <h3>📋 Inspección Individual de Rondas</h3>
+                <p style="font-size:11px; color:var(--text-dim); margin-top:2px;">Haz clic en cualquier ronda para desplegar sus datos completos o corregir errores con clave de Administrador.</p>
+                <div id="listaRondas" style="max-height: 300px; overflow-y: auto;">Cargando...</div>
+            </div>
+
+            <!-- MODAL / CONTENEDOR DE EDICIÓN Y DETALLE COMPLETO -->
+            <div id="visor-auditoria" class="card" style="display:none; border:2px solid var(--accent);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 id="auditor-titulo" style="color:var(--accent);">🔎 Detalle de Ronda</h3>
+                    <button onclick="cerrarVisorAuditoria()" style="width:auto; padding:4px 10px; font-size:11px; background:var(--danger); margin:0;">✖️ Cerrar</button>
+                </div>
+                <div id="auditor-cuerpo" class="grid-auditoria"></div>
+                
+                <div style="margin-top:15px; display:flex; gap:10px;">
+                    <button class="btn-main" id="btn-habilitar-edicion" onclick="solicitarAccesoEditarRonda()" style="background:var(--warning); color:#000;">✏️ Editar Datos (Requiere Clave Admin)</button>
+                    <button class="btn-main" id="btn-guardar-edicion" onclick="guardarEdicionAdminSupabase()" style="display:none; background:var(--success);">💾 Guardar Cambios en Servidor</button>
+                </div>
             </div>
         </div>
 
@@ -372,42 +383,10 @@
         let chartAnalitico = null;
         let dibujoFirma = false;
         let canvas, ctxFirma;
-        let deferredPrompt;
+        let rondaSeleccionadaParaEditar = null;
 
         document.getElementById('ver-bloqueo').innerText = VERSION_APP;
         document.getElementById('ver-cabecera').innerText = "v" + VERSION_APP;
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            const esStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-            const banner = document.getElementById('banner-pwa');
-            const txtInstrucciones = document.getElementById('pwa-instrucciones');
-
-            if (!esStandalone) {
-                banner.style.display = "block";
-                if (esIOS) {
-                    txtInstrucciones.innerHTML = "Para instalar en tu iPhone:<br>1. Toca el botón <b>Compartir</b>.<br>2. Selecciona <b>'Agregar a inicio'</b> 📲.";
-                } else {
-                    txtInstrucciones.innerText = "Haz clic en el botón de abajo para instalar el sistema como aplicación directa de escritorio.";
-                }
-            }
-        });
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault(); deferredPrompt = e;
-            const btnAndroid = document.getElementById('btn-pwa-android');
-            if(btnAndroid) {
-                btnAndroid.style.display = "block";
-                btnAndroid.addEventListener('click', async () => {
-                    if (deferredPrompt) {
-                        deferredPrompt.prompt();
-                        const { outcome } = await deferredPrompt.userChoice;
-                        if (outcome === 'accepted') { document.getElementById('banner-pwa').style.display = 'none'; }
-                        deferredPrompt = null;
-                    }
-                });
-            }
-        });
 
         if (sessionStorage.getItem('auth_operador')) { operadorActivo = sessionStorage.getItem('auth_operador'); mostrarApp(); }
 
@@ -469,24 +448,130 @@
             } catch(e){ document.getElementById('status-cloud').innerText = "❌ Error de sincronización"; }
         }
 
-        // 🔄 DETALLE CORREGIDO: Imprime la coordenada completa con latitud y longitud
         function renderizarListaRondas(filtradas) {
             const contenedor = document.getElementById('listaRondas'); contenedor.innerHTML = '';
             const obj = filtradas || rondasCargadas; const rev = [...obj].reverse();
             if(rev.length === 0) { contenedor.innerHTML = '<p>No hay registros.</p>'; return; }
             rev.forEach(r => {
                 const h = r.created_at ? new Date(r.created_at).toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'}) : 'N/A';
-                
-                // Formatear coordenadas completas de manera segura
-                let coordenada = "N/A";
-                if (r.latitud && r.longitud) {
-                    coordenada = `${r.latitud}, ${r.longitud}`;
-                } else if (r.latitud) {
-                    coordenada = r.latitud;
-                }
+                let coordenada = (r.latitud && r.longitud) ? `${r.latitud}, ${r.longitud}` : (r.latitud || 'N/A');
 
-                contenedor.innerHTML += `<div class="ronda-item"><b>📅 ${r.fecha}</b> | Real: ${h}<br><span style="color:var(--accent)">👷 ${r.operador}</span> (GPS: ${coordenada})</div>`;
+                contenedor.innerHTML += `
+                    <div class="ronda-card-item" onclick="verDetalleAuditoriaRonda('${r.id}')">
+                        <b>📅 ${r.fecha} | Turno ${r.turno}</b> (Real: ${h})<br>
+                        <span style="color:var(--accent)">👷 ${r.operador}</span> | GPS: ${coordenada}
+                    </div>
+                `;
             });
+        }
+
+        // 🔎 DESPLEGAR TODOS LOS DATOS REGISTRADOS DE UNA RONDA
+        function verDetalleAuditoriaRonda(idRonda) {
+            const ronda = rondasCargadas.find(r => String(r.id) === String(idRonda));
+            if(!ronda) return;
+            rondaSeleccionadaParaEditar = ronda;
+
+            const visor = document.getElementById('visor-auditoria');
+            const cuerpo = document.getElementById('auditor-cuerpo');
+            document.getElementById('auditor-titulo').innerText = `🔎 Ronda: ${ronda.fecha} (${ronda.operador})`;
+
+            // Mapeo de variables importantes para inspeccionar
+            const camposMapa = [
+                { id: 'ci_presion_salida', lbl: '🔥 CI: Presión Salida' },
+                { id: 'ci_volt_bateria_1', lbl: '🔥 CI: Volt Batería 1' },
+                { id: 'ci_volt_bateria_2', lbl: '🔥 CI: Volt Batería 2' },
+                { id: 'ci_nivel_tk_diesel', lbl: '🔥 CI: Nivel Diésel (%)' },
+                { id: 'ci_nivel_tk_agua', lbl: '🔥 CI: Nivel Agua' },
+                { id: 'comp_pres_aire_tanque', lbl: '💨 Compresor: Presión Tanque' },
+                { id: 'comp_pres_aire_instrumento', lbl: '💨 Compresor: Presión Inst.' },
+                { id: 'comp_pres_difer_secador', lbl: '💨 Compresor: Secador' },
+                { id: 'ccm_c11_amperimetro', lbl: '⚡ CCM 1.1 Amp' },
+                { id: 'ccm_c11_voltimetro', lbl: '⚡ CCM 1.1 Volt' },
+                { id: 'ccm_c21_amperimetro', lbl: '⚡ CCM 2.1 Amp' },
+                { id: 'ccm_c21_voltimetro', lbl: '⚡ CCM 2.1 Volt' },
+                { id: 'ccm_c31_amperimetro', lbl: '⚡ CCM 3.1 Amp' },
+                { id: 'ccm_c32_voltimetro', lbl: '⚡ CCM 3.2 Volt' },
+                { id: 'ccm_c32_frecuencimetro', lbl: '⚡ CCM Frecuencia' },
+                { id: 'bop_main_volt', lbl: '🔋 BOP: Main Volt' },
+                { id: 'bop_chgr_output_volt', lbl: '🔋 BOP: Chgr Volt' },
+                { id: 'bop_chgr_output_amp', lbl: '🔋 BOP: Chgr Amp' },
+                { id: 'bop_nivel_baterias', lbl: '🔋 BOP: Baterías Status' },
+                { id: 'sep_nivel', lbl: '🛢️ Separador Aceite' },
+                { id: 'agua_presion_suministro', lbl: '💧 Aguas: Presión' },
+                { id: 'agua_nivel_tanque_almacen', lbl: '💧 Aguas: Nivel Tanque' },
+                { id: 'agua_horas_operacion', lbl: '💧 Aguas: Horas Diarias' },
+                { id: 'trans_temp_aceite', lbl: '⚡ Transf: Temp. Aceite' },
+                { id: 'trans_temp_devanado', lbl: '⚡ Transf: Temp. Devanado' },
+                { id: 'comb_nivel_tanque_a', lbl: '⛽ Combustible: Tanque A' },
+                { id: 'comb_nivel_tanque_b', lbl: '⛽ Combustible: Tanque B' },
+                { id: 'comb_proteccion_catodica', lbl: '⛽ Catódica Volt' },
+                { id: 'comb_proteccion_catodica_amp', lbl: '⛽ Catódica Amp' },
+                { id: 'cg_presion_entrada', lbl: '🎛️ City Gate: Pres. Entrada' },
+                { id: 'cg_temperatura_entrada', lbl: '🎛️ City Gate: Temp Entrada' },
+                { id: 'cg_presion_regulada', lbl: '🎛️ City Gate: Pres. Regulada' }
+            ];
+
+            cuerpo.innerHTML = '';
+            camposMapa.forEach(item => {
+                const val = ronda[item.id] !== null && ronda[item.id] !== undefined ? ronda[item.id] : 'N/A';
+                cuerpo.innerHTML += `
+                    <div class="item-audit">
+                        <b>${item.lbl}</b>
+                        <input type="text" class="audit-input" data-key="${item.id}" value="${val}" disabled style="padding:4px; margin:2px 0; font-size:12px; background:#0f172a; color:#fff;">
+                    </div>
+                `;
+            });
+
+            document.getElementById('btn-habilitar-edicion').style.display = 'block';
+            document.getElementById('btn-guardar-edicion').style.display = 'none';
+            visor.style.display = 'block';
+            visor.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cerrarVisorAuditoria() {
+            document.getElementById('visor-auditoria').style.display = 'none';
+            rondaSeleccionadaParaEditar = null;
+        }
+
+        // 🔒 MÓDULO DE CLAVE ADMIN PARA CORREGIR DATOS
+        function solicitarAccesoEditarRonda() {
+            const claveIngresada = prompt("🔒 INGRESA LA CLAVE DE ADMINISTRADOR PARA CORREGIR ESTA RONDA:");
+            if (claveIngresada === PIN_ADMIN_ESTRICIONAL) {
+                alert("🔓 Acceso concedido. Ahora puedes modificar los valores y presionar 'Guardar Cambios'.");
+                document.querySelectorAll('.audit-input').forEach(inp => {
+                    inp.removeAttribute('disabled');
+                    inp.style.border = "1px solid var(--warning)";
+                });
+                document.getElementById('btn-habilitar-edicion').style.display = 'none';
+                document.getElementById('btn-guardar-edicion').style.display = 'block';
+            } else if (claveIngresada !== null) {
+                alert("❌ Clave incorrecta. No tienes permisos para corregir esta ronda.");
+            }
+        }
+
+        // 💾 GUARDAR LA EDICIÓN REALIZADA EN SUPABASE
+        async function guardarEdicionAdminSupabase() {
+            if(!rondaSeleccionadaParaEditar) return;
+
+            let cambios = {
+                observaciones: (rondaSeleccionadaParaEditar.observaciones || '') + ` (Modificado por Admin ${operadorActivo})`
+            };
+
+            document.querySelectorAll('.audit-input').forEach(inp => {
+                const key = inp.getAttribute('data-key');
+                const val = inp.value.trim();
+                cambios[key] = (val === '' || val === 'N/A') ? null : (isNaN(val) ? val : parseFloat(val));
+            });
+
+            const { error } = await _supabase.from('rondas_termica').update(cambios).eq('id', rondaSeleccionadaParaEditar.id);
+
+            if(!error) {
+                alert("✅ Ronda corregida y sincronizada en Supabase exitosamente.");
+                cerrarVisorAuditoria();
+                cargarDatosPlanta();
+            } else {
+                alert("Error al actualizar la ronda: " + error.message);
+            }
         }
 
         function subirRondaConFirmaYGPS() {
