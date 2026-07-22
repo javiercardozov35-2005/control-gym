@@ -19,8 +19,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        // 🚨 ROMPE-CACHÉ V1.3.0: Nuevas variables (Antiincrustante en Aguas y Mirilla en Separador)
-        const VERSION_APP = "1.3.0"; 
+        // 🚨 ROMPE-CACHÉ V1.5.0: Captura de Geolocalización Auditada y Margen de Error
+        const VERSION_APP = "1.5.0"; 
         const PIN_ADMIN_ESTRICIONAL = "9999";
 
         (function() {
@@ -229,14 +229,14 @@
                 <div class="campo-grupal"><label data-label="BOP: Sistema CCM Disponible">Sistema CCM Disponible:</label><select id="bop_sistema_ccm_disponible"><option value="SI">SI</option><option value="NO">NO</option></select></div>
             </div>
 
-            <!-- 5. SEPARADOR DE ACEITE (+ MIRILLA AGREGADA) -->
+            <!-- 5. SEPARADOR DE ACEITE -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-sep')">🛢️ 5. Separador de Aceite <span>▼</span></button>
             <div id="sec-sep" class="seccion-contenido">
                 <div class="campo-grupal"><label data-label="Separador: Nivel Aceite">Nivel (0 - 1 MTS)</label><input type="number" id="sep_nivel" step="any" oninput="validarRango(this, 0, 1)"></div>
                 <div class="campo-grupal"><label data-label="Separador: Mirilla">Mirilla (%) <span class="tag-range">(0 - 100 %)</span></label><input type="number" id="sep_mirilla" min="0" max="100" step="any" oninput="validarRango(this, 0, 100)"></div>
             </div>
 
-            <!-- 6. PLANTA DE AGUAS (+ ANTIINCRUSTANTE AGREGADO) -->
+            <!-- 6. PLANTA DE AGUAS -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-agua')">💧 6. Planta de Aguas <span>▼</span></button>
             <div id="sec-agua" class="seccion-contenido">
                 <div class="campo-grupal"><label data-label="Aguas: Presión Suministro">Presión Suministro (30 - 60 PSI)</label><input type="number" id="agua_presion_suministro" step="any" oninput="validarRango(this, 30, 60)"></div>
@@ -287,7 +287,7 @@
                 <div class="campo-grupal"><label data-label="Aires: BOP">B.O.P.:</label><select id="aa_bop"><option value="SI">SI</option><option value="NO">NO</option></select></div>
             </div>
 
-            <!-- CONTROL DE FIRMA Y GUARDADO -->
+            <!-- CONTROL DE FIRMA Y GUARDADO CON GEOLOCALIZACIÓN AUDITADA -->
             <div class="card" style="margin-top: 15px;">
                 <label style="font-size: 13px; color: var(--text-dim); display:block; margin-bottom:5px;">Firma del Operador de Turno (Obligatoria):</label>
                 <canvas id="canvasFirma" class="canvas-firma"></canvas>
@@ -478,6 +478,8 @@
             document.getElementById('auditor-titulo').innerText = `🔎 Ronda: ${ronda.fecha} (${ronda.operador})`;
 
             const camposMapa = [
+                { id: 'latitud', lbl: '📡 Latitud GPS' },
+                { id: 'longitud', lbl: '📡 Longitud GPS' },
                 { id: 'ci_presion_salida', lbl: '🔥 CI: Presión Salida' },
                 { id: 'ci_volt_bateria_1', lbl: '🔥 CI: Volt Batería 1' },
                 { id: 'ci_volt_bateria_2', lbl: '🔥 CI: Volt Batería 2' },
@@ -594,18 +596,19 @@
                 return;
             }
 
-            document.getElementById('status-cloud').innerText = "📡 Solicitando Geolocalización Real...";
+            document.getElementById('status-cloud').innerText = "📡 Solicitando Geolocalización Auditada...";
             const firmaImagenBase64 = canvas.toDataURL();
-            
+
             if (navigator.geolocation) {
                 let gpsResuelto = false;
 
+                // Timeout inteligente de 3.5s para no congelar la app en montañas
                 const gpsTimeout = setTimeout(() => {
                     if (!gpsResuelto) {
                         gpsResuelto = true;
-                        enviarDatosFinales("Sin señal GPS (Planta)", "Sin señal GPS (Planta)", firmaImagenBase64);
+                        enviarDatosFinales("Sombra Satelital / Red Celular", "Sombra Satelital / Red Celular", firmaImagenBase64);
                     }
-                }, 4000);
+                }, 3500);
 
                 navigator.geolocation.getCurrentPosition(
                     async (position) => {
@@ -614,19 +617,20 @@
                             clearTimeout(gpsTimeout);
                             const lat = position.coords.latitude.toFixed(5);
                             const lon = position.coords.longitude.toFixed(5);
-                            await enviarDatosFinales(lat, lon, firmaImagenBase64);
+                            const acc = position.coords.accuracy ? ` (±${Math.round(position.coords.accuracy)}m)` : '';
+                            await enviarDatosFinales(lat + acc, lon, firmaImagenBase64);
                         }
                     },
                     async (error) => {
                         if (!gpsResuelto) {
                             gpsResuelto = true;
                             clearTimeout(gpsTimeout);
-                            await enviarDatosFinales("Ubicación no autorizada", "Ubicación no autorizada", firmaImagenBase64);
+                            await enviarDatosFinales("GPS Desactivado por Operador", "GPS Desactivado por Operador", firmaImagenBase64);
                         }
-                    }, { enableHighAccuracy: true, timeout: 3500 }
+                    }, { enableHighAccuracy: false, timeout: 3000, maximumAge: 30000 }
                 );
             } else { 
-                enviarDatosFinales("GPS no soportado", "GPS no soportado", firmaImagenBase64); 
+                enviarDatosFinales("GPS No Soportado", "GPS No Soportado", firmaImagenBase64); 
             }
         }
 
