@@ -19,8 +19,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        // 🚨 ROMPE-CACHÉ V1.6.0: Enganche de GPS Proactivo en Segundo Plano durante el Llenado
-        const VERSION_APP = "1.6.0"; 
+        // 🚨 ROMPE-CACHÉ V1.7.0: Incorporación de Resumen Estadístico (Promedio, Máx, Mín)
+        const VERSION_APP = "1.7.0"; 
         const PIN_ADMIN_ESTRICIONAL = "9999";
 
         (function() {
@@ -121,6 +121,19 @@
         .grid-auditoria { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; margin-top: 10px; text-align: left; }
         .item-audit { background: #1a2638; padding: 6px 8px; border-radius: 6px; border: 1px solid #2a3a52; }
         .item-audit b { color: var(--accent); display: block; font-size: 10px; text-transform: uppercase; }
+
+        /* Estilos de la tarjeta de promedios */
+        .tarjeta-estadisticas {
+            background: #0f172a; border: 1px solid var(--accent); border-radius: 8px; padding: 12px; margin-top: 12px; font-size: 12px;
+        }
+        .grid-kpi {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; text-align: center;
+        }
+        .box-kpi {
+            background: #1e293b; padding: 8px; border-radius: 6px; border: 1px solid #334155;
+        }
+        .box-kpi label { font-size: 10px; color: var(--text-dim); display: block; font-weight: bold; }
+        .box-kpi span { font-size: 15px; font-weight: bold; color: var(--accent); }
     </style>
 </head>
 <body>
@@ -290,7 +303,7 @@
                 <div class="campo-grupal"><label data-label="Aires: BOP">B.O.P.:</label><select id="aa_bop"><option value="SI">SI</option><option value="NO">NO</option></select></div>
             </div>
 
-            <!-- CONTROL DE FIRMA Y GUARDADO CON GEOLOCALIZACIÓN PROACTIVA -->
+            <!-- CONTROL DE FIRMA Y GUARDADO -->
             <div class="card" style="margin-top: 15px;">
                 <label style="font-size: 13px; color: var(--text-dim); display:block; margin-bottom:5px;">Firma del Operador de Turno (Obligatoria):</label>
                 <canvas id="canvasFirma" class="canvas-firma"></canvas>
@@ -312,7 +325,7 @@
                 
                 <label style="font-size: 13px; color: var(--text-dim);">Selecciona Variables a Cruzar:</label>
                 <div class="grid-checkboxes">
-                    <label class="item-checkbox"><input type="checkbox" value="ci_presion_salida" checked> 🔥 CI: Presión Salida</label>
+                    <label class="item-checkbox"><input type="checkbox" value="ci_presion_salida"> 🔥 CI: Presión Salida</label>
                     <label class="item-checkbox"><input type="checkbox" value="ci_volt_bateria_1"> 🔥 CI: Volt Batería 1</label>
                     <label class="item-checkbox"><input type="checkbox" value="ci_volt_bateria_2"> 🔥 CI: Volt Batería 2</label>
                     <label class="item-checkbox"><input type="checkbox" value="ci_nivel_tk_diesel"> 🔥 CI: Nivel Diésel (%)</label>
@@ -350,6 +363,26 @@
                 
                 <button class="btn-main" onclick="actualizarGraficaAnalitica()" style="margin-top:10px; padding:10px;">📊 Analizar vs Hora Real</button>
                 <div class="contenedor-grafica"><canvas id="graficaAnalitica"></canvas></div>
+
+                <!-- CONTENEDOR NUEVO: RESUMEN ESTADÍSTICO -->
+                <div id="resumen-estadistico" class="tarjeta-estadisticas" style="display:none;">
+                    <b id="titulo-kpi" style="color:var(--accent);">📊 Indicadores Estadísticos:</b>
+                    <div class="grid-kpi">
+                        <div class="box-kpi">
+                            <label>PROMEDIO</label>
+                            <span id="kpi-promedio">0.0</span>
+                        </div>
+                        <div class="box-kpi">
+                            <label>MÁXIMO</label>
+                            <span id="kpi-max" style="color:var(--danger);">0.0</span>
+                        </div>
+                        <div class="box-kpi">
+                            <label>MÍNIMO</label>
+                            <span id="kpi-min" style="color:var(--success);">0.0</span>
+                        </div>
+                    </div>
+                    <p id="kpi-muestras" style="margin:6px 0 0 0; font-size:10px; color:var(--text-dim); text-align:center;">Muestras procesadas: 0 lecturas</p>
+                </div>
             </div>
 
             <!-- INSPECCIÓN Y EDICIÓN COMPLETA -->
@@ -391,7 +424,6 @@
         let canvas, ctxFirma;
         let rondaSeleccionadaParaEditar = null;
 
-        // Variables de rastreo GPS proactivo en segundo plano
         let gpsLatCap = null;
         let gpsLonCap = null;
         let gpsWatchId = null;
@@ -428,7 +460,6 @@
             document.getElementById('filtro-desde').value = hace7Dias.toISOString().split('T')[0];
             document.getElementById('filtro-hasta').value = hoy.toISOString().split('T')[0];
             
-            // Iniciar búsqueda continua de GPS en segundo plano durante todo el diligenciamiento
             iniciarEngancheGPSProactivo();
             cargarDatosPlanta();
         }
@@ -641,7 +672,6 @@
             document.getElementById('status-cloud').innerText = "🚀 Guardando con Geolocalización Auditada...";
             const firmaImagenBase64 = canvas.toDataURL();
 
-            // Usar la coordenada capturada proactivamente en segundo plano
             const finalLat = gpsLatCap || "Sombra Satelital / Red Celular";
             const finalLon = gpsLonCap || "Sombra Satelital / Red Celular";
 
@@ -749,20 +779,30 @@
             let datasets = []; let cIndex = 0;
             const colores = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#ec4899', '#a855f7', '#06b6d4', '#14b8a6', '#f43f5e', '#6366f1'];
 
+            let primeraVariableMarcada = null;
+            let valoresPrimeraVariable = [];
+
             checkboxes.forEach(cb => {
                 if (cb.checked) {
                     const f = cb.value;
+                    const serieDatos = filtradas.map(r => {
+                        if(f === 'agua_horas_operacion' && r[f]){
+                            const parts = r[f].split(':');
+                            if(parts.length === 2) {
+                                return parseFloat(parts[0]) + (parseFloat(parts[1])/60);
+                            }
+                        }
+                        return (r[f] !== null && r[f] !== undefined && !isNaN(r[f])) ? parseFloat(r[f]) : null;
+                    });
+
+                    if(!primeraVariableMarcada) {
+                        primeraVariableMarcada = cb.parentElement.innerText.trim();
+                        valoresPrimeraVariable = serieDatos.filter(v => v !== null && !isNaN(v));
+                    }
+
                     datasets.push({
                         label: cb.parentElement.innerText.trim(),
-                        data: filtradas.map(r => {
-                            if(f === 'agua_horas_operacion' && r[f]){
-                                const parts = r[f].split(':');
-                                if(parts.length === 2) {
-                                    return parseFloat(parts[0]) + (parseFloat(parts[1])/60);
-                                }
-                            }
-                            return r[f];
-                        }),
+                        data: serieDatos,
                         borderColor: colores[cIndex % colores.length],
                         backgroundColor: 'transparent', borderWidth: 2.5, tension: 0.15
                     });
@@ -773,6 +813,24 @@
             if(chartAnalitico) chartAnalitico.destroy();
             const ctx = document.getElementById('graficaAnalitica').getContext('2d');
             chartAnalitico = new Chart(ctx, { type: 'line', data: { labels: etiquetas, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false } });
+
+            // CÁLCULO ESTADÍSTICO PARA LA TARJETA KPI
+            const divKpi = document.getElementById('resumen-estadistico');
+            if(primeraVariableMarcada && valoresPrimeraVariable.length > 0) {
+                const suma = valoresPrimeraVariable.reduce((a, b) => a + b, 0);
+                const promedio = (suma / valoresPrimeraVariable.length).toFixed(2);
+                const maximo = Math.max(...valoresPrimeraVariable).toFixed(2);
+                const minimo = Math.min(...valoresPrimeraVariable).toFixed(2);
+
+                document.getElementById('titulo-kpi').innerText = `📊 Indicadores: ${primeraVariableMarcada}`;
+                document.getElementById('kpi-promedio').innerText = promedio;
+                document.getElementById('kpi-max').innerText = maximo;
+                document.getElementById('kpi-min').innerText = minimo;
+                document.getElementById('kpi-muestras').innerText = `Procesadas ${valoresPrimeraVariable.length} lecturas numéricas en el rango seleccionado.`;
+                divKpi.style.display = 'block';
+            } else {
+                divKpi.style.display = 'none';
+            }
         }
     </script>
 </body>
