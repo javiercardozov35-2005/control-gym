@@ -19,8 +19,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        // 🚨 ROMPE-CACHÉ V1.5.0: Captura de Geolocalización Auditada y Margen de Error
-        const VERSION_APP = "1.5.0"; 
+        // 🚨 ROMPE-CACHÉ V1.6.0: Enganche de GPS Proactivo en Segundo Plano durante el Llenado
+        const VERSION_APP = "1.6.0"; 
         const PIN_ADMIN_ESTRICIONAL = "9999";
 
         (function() {
@@ -79,6 +79,8 @@
         .tag-range { font-size: 11px; color: var(--warning); font-weight: 500; display: inline-block; margin-left: 5px; }
 
         #status-cloud { text-align: center; font-size: 12px; color: var(--accent); margin-bottom: 10px; font-weight: bold; }
+        #gps-indicator { text-align: center; font-size: 11px; color: var(--text-dim); margin-bottom: 10px; font-style: italic; }
+        
         #pantalla-bloqueo {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-color); z-index: 9999;
             display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px; text-align: center;
@@ -144,6 +146,7 @@
             <button onclick="cerrarSesion()" style="width: auto; padding: 6px 12px; font-size: 11px; background: var(--danger); color: #fff; margin:0;">🔒 Bloquear</button>
         </div>
         <div id="status-cloud">Sincronizando seguridad...</div>
+        <div id="gps-indicator">📡 Enganchando satélites en segundo plano...</div>
 
         <!-- PESTAÑA 1: FORMULARIO COMPLETO -->
         <div id="tab-nueva" class="tab-content active">
@@ -287,7 +290,7 @@
                 <div class="campo-grupal"><label data-label="Aires: BOP">B.O.P.:</label><select id="aa_bop"><option value="SI">SI</option><option value="NO">NO</option></select></div>
             </div>
 
-            <!-- CONTROL DE FIRMA Y GUARDADO CON GEOLOCALIZACIÓN AUDITADA -->
+            <!-- CONTROL DE FIRMA Y GUARDADO CON GEOLOCALIZACIÓN PROACTIVA -->
             <div class="card" style="margin-top: 15px;">
                 <label style="font-size: 13px; color: var(--text-dim); display:block; margin-bottom:5px;">Firma del Operador de Turno (Obligatoria):</label>
                 <canvas id="canvasFirma" class="canvas-firma"></canvas>
@@ -388,6 +391,11 @@
         let canvas, ctxFirma;
         let rondaSeleccionadaParaEditar = null;
 
+        // Variables de rastreo GPS proactivo en segundo plano
+        let gpsLatCap = null;
+        let gpsLonCap = null;
+        let gpsWatchId = null;
+
         document.getElementById('ver-bloqueo').innerText = VERSION_APP;
         document.getElementById('ver-cabecera').innerText = "v" + VERSION_APP;
 
@@ -419,11 +427,45 @@
             const hoy = new Date(); const hace7Dias = new Date(); hace7Dias.setDate(hoy.getDate() - 7);
             document.getElementById('filtro-desde').value = hace7Dias.toISOString().split('T')[0];
             document.getElementById('filtro-hasta').value = hoy.toISOString().split('T')[0];
+            
+            // Iniciar búsqueda continua de GPS en segundo plano durante todo el diligenciamiento
+            iniciarEngancheGPSProactivo();
             cargarDatosPlanta();
         }
 
+        function iniciarEngancheGPSProactivo() {
+            const ind = document.getElementById('gps-indicator');
+            if (navigator.geolocation) {
+                gpsWatchId = navigator.geolocation.watchPosition(
+                    (pos) => {
+                        const lat = pos.coords.latitude.toFixed(5);
+                        const lon = pos.coords.longitude.toFixed(5);
+                        const acc = pos.coords.accuracy ? ` (±${Math.round(pos.coords.accuracy)}m)` : '';
+                        gpsLatCap = lat + acc;
+                        gpsLonCap = lon;
+                        ind.innerHTML = `🟢 GPS Enganchado: ${lat}, ${lon} ${acc}`;
+                        ind.style.color = "var(--success)";
+                    },
+                    (err) => {
+                        if(!gpsLatCap) {
+                            ind.innerHTML = "🟡 Sombra Satelital: Buscando señal...";
+                            ind.style.color = "var(--warning)";
+                        }
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+                );
+            } else {
+                ind.innerHTML = "🔴 GPS no soportado en dispositivo";
+            }
+        }
+
         function limpiarFirma() { ctxFirma.clearRect(0, 0, canvas.width, canvas.height); }
-        function cerrarSesion() { sessionStorage.removeItem('auth_operador'); window.location.reload(); }
+        function cerrarSesion() { 
+            if(gpsWatchId) navigator.geolocation.clearWatch(gpsWatchId);
+            sessionStorage.removeItem('auth_operador'); 
+            window.location.reload(); 
+        }
+        
         function toggleSeccion(id) { const sec = document.getElementById(id); sec.style.display = (sec.style.display === 'block') ? 'none' : 'block'; }
         
         function cambiarPestaña(tabId, boton) {
@@ -513,7 +555,7 @@
                 { id: 'comb_proteccion_catodica_amp', lbl: '⛽ Catódica Amp' },
                 { id: 'cg_presion_entrada', lbl: '🎛️ City Gate: Pres. Entrada' },
                 { id: 'cg_temperatura_entrada', lbl: '🎛️ City Gate: Temp Entrada' },
-                { id: 'cg_presion_regulada', lbl: '🎛️ City Gate: Pres. Regulada' }
+                { id: 'cg_presion_regulada', lbl: '🎛️ City Gate: Presión Regulada' }
             ];
 
             cuerpo.innerHTML = '';
@@ -596,42 +638,14 @@
                 return;
             }
 
-            document.getElementById('status-cloud').innerText = "📡 Solicitando Geolocalización Auditada...";
+            document.getElementById('status-cloud').innerText = "🚀 Guardando con Geolocalización Auditada...";
             const firmaImagenBase64 = canvas.toDataURL();
 
-            if (navigator.geolocation) {
-                let gpsResuelto = false;
+            // Usar la coordenada capturada proactivamente en segundo plano
+            const finalLat = gpsLatCap || "Sombra Satelital / Red Celular";
+            const finalLon = gpsLonCap || "Sombra Satelital / Red Celular";
 
-                // Timeout inteligente de 3.5s para no congelar la app en montañas
-                const gpsTimeout = setTimeout(() => {
-                    if (!gpsResuelto) {
-                        gpsResuelto = true;
-                        enviarDatosFinales("Sombra Satelital / Red Celular", "Sombra Satelital / Red Celular", firmaImagenBase64);
-                    }
-                }, 3500);
-
-                navigator.geolocation.getCurrentPosition(
-                    async (position) => {
-                        if (!gpsResuelto) {
-                            gpsResuelto = true;
-                            clearTimeout(gpsTimeout);
-                            const lat = position.coords.latitude.toFixed(5);
-                            const lon = position.coords.longitude.toFixed(5);
-                            const acc = position.coords.accuracy ? ` (±${Math.round(position.coords.accuracy)}m)` : '';
-                            await enviarDatosFinales(lat + acc, lon, firmaImagenBase64);
-                        }
-                    },
-                    async (error) => {
-                        if (!gpsResuelto) {
-                            gpsResuelto = true;
-                            clearTimeout(gpsTimeout);
-                            await enviarDatosFinales("GPS Desactivado por Operador", "GPS Desactivado por Operador", firmaImagenBase64);
-                        }
-                    }, { enableHighAccuracy: false, timeout: 3000, maximumAge: 30000 }
-                );
-            } else { 
-                enviarDatosFinales("GPS No Soportado", "GPS No Soportado", firmaImagenBase64); 
-            }
+            enviarDatosFinales(finalLat, finalLon, firmaImagenBase64);
         }
 
         async function enviarDatosFinales(lat, lon, firma) {
