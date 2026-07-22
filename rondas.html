@@ -19,9 +19,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        // 🚨 ROMPE-CACHÉ V1.2.0: Cambio de orden de plantas y Módulo de Auditoría/Edición Admin
-        const VERSION_APP = "1.2.0"; 
-        const PIN_ADMIN_ESTRICIONAL = "9999"; // 🔒 Clave para editar o corregir datos de rondas
+        // 🚨 ROMPE-CACHÉ V1.3.0: Nuevas variables (Antiincrustante en Aguas y Mirilla en Separador)
+        const VERSION_APP = "1.3.0"; 
+        const PIN_ADMIN_ESTRICIONAL = "9999";
 
         (function() {
             const versionGuardada = localStorage.getItem('app_version');
@@ -229,17 +229,19 @@
                 <div class="campo-grupal"><label data-label="BOP: Sistema CCM Disponible">Sistema CCM Disponible:</label><select id="bop_sistema_ccm_disponible"><option value="SI">SI</option><option value="NO">NO</option></select></div>
             </div>
 
-            <!-- 5. SEPARADOR DE ACEITE -->
+            <!-- 5. SEPARADOR DE ACEITE (+ MIRILLA AGREGADA) -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-sep')">🛢️ 5. Separador de Aceite <span>▼</span></button>
             <div id="sec-sep" class="seccion-contenido">
                 <div class="campo-grupal"><label data-label="Separador: Nivel Aceite">Nivel (0 - 1 MTS)</label><input type="number" id="sep_nivel" step="any" oninput="validarRango(this, 0, 1)"></div>
+                <div class="campo-grupal"><label data-label="Separador: Mirilla">Mirilla (%) <span class="tag-range">(0 - 100 %)</span></label><input type="number" id="sep_mirilla" min="0" max="100" step="any" oninput="validarRango(this, 0, 100)"></div>
             </div>
 
-            <!-- 🔄 6. PLANTA DE AGUAS (REUBICADA ANTES DEL TRANSFORMADOR) -->
+            <!-- 6. PLANTA DE AGUAS (+ ANTIINCRUSTANTE AGREGADO) -->
             <button class="seccion-btn" onclick="toggleSeccion('sec-agua')">💧 6. Planta de Aguas <span>▼</span></button>
             <div id="sec-agua" class="seccion-contenido">
                 <div class="campo-grupal"><label data-label="Aguas: Presión Suministro">Presión Suministro (30 - 60 PSI)</label><input type="number" id="agua_presion_suministro" step="any" oninput="validarRango(this, 30, 60)"></div>
                 <div class="campo-grupal"><label data-label="Aguas: Nivel Tanque">Nivel Tanque (5 - 7.5 MTS)</label><input type="number" id="agua_nivel_tanque_almacen" step="any" oninput="validarRango(this, 5, 7.5)"></div>
+                <div class="campo-grupal"><label data-label="Aguas: Nivel Antiincrustante">Nivel Antiincrustante <span class="tag-range">(0 - 70 Galones)</span></label><input type="number" id="agua_nivel_antiincrustante" min="0" max="70" step="any" oninput="validarRango(this, 0, 70)"></div>
                 <div class="campo-grupal">
                     <label data-label="Aguas: Horas Operación">Horas de Operación (diarias):</label>
                     <div style="display: flex; gap: 8px;">
@@ -314,7 +316,7 @@
                     <label class="item-checkbox"><input type="checkbox" value="ci_nivel_tk_agua"> 🔥 CI: Nivel Agua</label>
                     <label class="item-checkbox"><input type="checkbox" value="comp_pres_aire_tanque"> 💨 Compresor: Presión Tanque</label>
                     <label class="item-checkbox"><input type="checkbox" value="comp_pres_aire_instrumento"> 💨 Compresor: Presión Inst.</label>
-                    <label class="item-checkbox"><input type="checkbox" value="comp_pres_difer_secador"> 💨 Compresor: Presión Dif. Secador</label>
+                    <label class="item-checkbox"><input type="checkbox" value="comp_pres_difer_secador"> 💨 Compresor: Secador</label>
                     <label class="item-checkbox"><input type="checkbox" value="ccm_c11_amperimetro"> ⚡ CCM: Cubículo 1.1 Amp</label>
                     <label class="item-checkbox"><input type="checkbox" value="ccm_c11_voltimetro"> ⚡ CCM: Cubículo 1.1 Volt</label>
                     <label class="item-checkbox"><input type="checkbox" value="ccm_c21_amperimetro"> ⚡ CCM: Cubículo 2.1 Amp</label>
@@ -326,10 +328,12 @@
                     <label class="item-checkbox"><input type="checkbox" value="bop_chgr_output_volt"> 🔋 BOP: Chgr Output Volt</label>
                     <label class="item-checkbox"><input type="checkbox" value="bop_chgr_output_amp"> 🔋 BOP: Chgr Output Amp</label>
                     <label class="item-checkbox"><input type="checkbox" value="sep_nivel"> 🛢️ Separador: Nivel Aceite</label>
+                    <label class="item-checkbox"><input type="checkbox" value="sep_mirilla"> 🛢️ Separador: Mirilla (%)</label>
                     <label class="item-checkbox"><input type="checkbox" value="trans_temp_aceite" checked> ⚡ Transf: Temp. Aceite</label>
                     <label class="item-checkbox"><input type="checkbox" value="trans_temp_devanado"> ⚡ Transf: Temp. Devanado</label>
                     <label class="item-checkbox"><input type="checkbox" value="agua_presion_suministro"> 💧 Aguas: Presión Suministro</label>
                     <label class="item-checkbox"><input type="checkbox" value="agua_nivel_tanque_almacen"> 💧 Aguas: Nivel Tanque</label>
+                    <label class="item-checkbox"><input type="checkbox" value="agua_nivel_antiincrustante"> 💧 Aguas: Antiincrustante (Gal)</label>
                     <label class="item-checkbox"><input type="checkbox" value="agua_horas_operacion"> 💧 Aguas: Horas Diarias (Tendencia)</label>
                     <label class="item-checkbox"><input type="checkbox" value="comb_nivel_tanque_a"> ⛽ Combustible: Nivel Tanque A</label>
                     <label class="item-checkbox"><input type="checkbox" value="comb_nivel_tanque_b"> ⛽ Combustible: Nivel Tanque B</label>
@@ -345,14 +349,13 @@
                 <div class="contenedor-grafica"><canvas id="graficaAnalitica"></canvas></div>
             </div>
 
-            <!-- 🔎 HISTORIAL Y VISUALIZADOR DE AUDITORÍA DETALLADA -->
+            <!-- INSPECCIÓN Y EDICIÓN COMPLETA -->
             <div class="card">
                 <h3>📋 Inspección Individual de Rondas</h3>
                 <p style="font-size:11px; color:var(--text-dim); margin-top:2px;">Haz clic en cualquier ronda para desplegar sus datos completos o corregir errores con clave de Administrador.</p>
                 <div id="listaRondas" style="max-height: 300px; overflow-y: auto;">Cargando...</div>
             </div>
 
-            <!-- MODAL / CONTENEDOR DE EDICIÓN Y DETALLE COMPLETO -->
             <div id="visor-auditoria" class="card" style="display:none; border:2px solid var(--accent);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <h3 id="auditor-titulo" style="color:var(--accent);">🔎 Detalle de Ronda</h3>
@@ -465,7 +468,6 @@
             });
         }
 
-        // 🔎 DESPLEGAR TODOS LOS DATOS REGISTRADOS DE UNA RONDA
         function verDetalleAuditoriaRonda(idRonda) {
             const ronda = rondasCargadas.find(r => String(r.id) === String(idRonda));
             if(!ronda) return;
@@ -475,7 +477,6 @@
             const cuerpo = document.getElementById('auditor-cuerpo');
             document.getElementById('auditor-titulo').innerText = `🔎 Ronda: ${ronda.fecha} (${ronda.operador})`;
 
-            // Mapeo de variables importantes para inspeccionar
             const camposMapa = [
                 { id: 'ci_presion_salida', lbl: '🔥 CI: Presión Salida' },
                 { id: 'ci_volt_bateria_1', lbl: '🔥 CI: Volt Batería 1' },
@@ -497,8 +498,10 @@
                 { id: 'bop_chgr_output_amp', lbl: '🔋 BOP: Chgr Amp' },
                 { id: 'bop_nivel_baterias', lbl: '🔋 BOP: Baterías Status' },
                 { id: 'sep_nivel', lbl: '🛢️ Separador Aceite' },
+                { id: 'sep_mirilla', lbl: '🛢️ Separador Mirilla (%)' },
                 { id: 'agua_presion_suministro', lbl: '💧 Aguas: Presión' },
                 { id: 'agua_nivel_tanque_almacen', lbl: '💧 Aguas: Nivel Tanque' },
+                { id: 'agua_nivel_antiincrustante', lbl: '💧 Aguas: Antiincrustante' },
                 { id: 'agua_horas_operacion', lbl: '💧 Aguas: Horas Diarias' },
                 { id: 'trans_temp_aceite', lbl: '⚡ Transf: Temp. Aceite' },
                 { id: 'trans_temp_devanado', lbl: '⚡ Transf: Temp. Devanado' },
@@ -533,7 +536,6 @@
             rondaSeleccionadaParaEditar = null;
         }
 
-        // 🔒 MÓDULO DE CLAVE ADMIN PARA CORREGIR DATOS
         function solicitarAccesoEditarRonda() {
             const claveIngresada = prompt("🔒 INGRESA LA CLAVE DE ADMINISTRADOR PARA CORREGIR ESTA RONDA:");
             if (claveIngresada === PIN_ADMIN_ESTRICIONAL) {
@@ -549,7 +551,6 @@
             }
         }
 
-        // 💾 GUARDAR LA EDICIÓN REALIZADA EN SUPABASE
         async function guardarEdicionAdminSupabase() {
             if(!rondaSeleccionadaParaEditar) return;
 
@@ -677,11 +678,13 @@
                 bop_sistema_ccm_disponible: document.getElementById('bop_sistema_ccm_disponible').value,
                 
                 sep_nivel: parseFloat(document.getElementById('sep_nivel').value) || null,
+                sep_mirilla: parseFloat(document.getElementById('sep_mirilla').value) || null,
                 trans_temp_aceite: parseFloat(document.getElementById('trans_temp_aceite').value) || null,
                 trans_temp_devanado: parseFloat(document.getElementById('trans_temp_devanado').value) || null,
                 
                 agua_presion_suministro: parseFloat(document.getElementById('agua_presion_suministro').value) || null,
                 agua_nivel_tanque_almacen: parseFloat(document.getElementById('agua_nivel_tanque_almacen').value) || null,
+                agua_nivel_antiincrustante: parseFloat(document.getElementById('agua_nivel_antiincrustante').value) || null,
                 agua_horas_operacion: stringHorasAgua,
                 agua_planta_en_servicio: document.getElementById('agua_planta_en_servicio').value,
                 
