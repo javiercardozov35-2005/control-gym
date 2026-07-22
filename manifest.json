@@ -1,0 +1,15 @@
+{
+  "name": "Majo Cardozo Cosmiatría",
+  "short_name": "Majo Cardozo",
+  "start_url": "majocardozo.html",
+  "display": "standalone",
+  "background_color": "#faf5f5",
+  "theme_color": "#d4af37",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
